@@ -1,6 +1,6 @@
-const __R=globalThis.__obieg.React;const{useState,useEffect,useCallback,useRef,useMemo,useReducer,useContext,createContext,createElement,Fragment,memo,forwardRef,useLayoutEffect,useId,useSyncExternalStore,useTransition,Component}=__R;
-const __J=globalThis.__obieg.jsxRuntime;const{jsx,jsxs,Fragment:_Fragment}=__J;
-// ../obieg-zero-plugins/wibor-calc/src/store.ts
+// mcp-plugin-dev/shims/react.mjs
+var R = globalThis.__obieg.React;
+var { useState, useEffect, useCallback, useRef, useMemo, useReducer, useContext, createContext, createElement, Fragment, memo, forwardRef, useLayoutEffect, useId, useSyncExternalStore, useTransition, Component } = R;
 
 // ../obieg-zero-plugins/wibor-calc/src/calc.ts
 var plnFmt = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -313,6 +313,10 @@ function useCases() {
   return { cases, current: currentCaseId, select: selectCase, create: createCase, remove: removeCase };
 }
 
+// mcp-plugin-dev/shims/jsx-runtime.mjs
+var J = globalThis.__obieg.jsxRuntime;
+var { jsx, jsxs, Fragment: Fragment2 } = J;
+
 // ../obieg-zero-plugins/wibor-calc/src/ui.tsx
 var Ctx = createContext(null);
 var useCtx = () => useContext(Ctx);
@@ -337,8 +341,8 @@ function createUI(ui, icons) {
     const upd = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
     const handleCalc = () => updateInput({ loanAmount: parseFloat(f.amount) || 0, margin: parseFloat(f.margin) || 0, loanPeriodMonths: parseInt(f.months) || 360, startDate: new Date(f.start), paymentDay: parseInt(f.day) || 15, bridgeMargin: parseFloat(f.bridge) || 0, bridgeEndDate: f.bridgeEnd ? new Date(f.bridgeEnd) : null });
     if (!ready) return null;
-    return /* @__PURE__ */ jsxs(Fragment, { children: [
-      /* @__PURE__ */ jsx(Box, { header: /* @__PURE__ */ jsx(Cell, { label: true, children: "Sprawy" }), body: /* @__PURE__ */ jsxs(Fragment, { children: [
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(Box, { header: /* @__PURE__ */ jsx(Cell, { label: true, children: "Sprawy" }), body: /* @__PURE__ */ jsxs(Fragment2, { children: [
         cases.map((c) => /* @__PURE__ */ jsx(ListItem, { label: c.name, active: currentCaseId === c.id, onClick: () => selectCase(c.id), action: { icon: X, onClick: () => removeCase(c.id) } }, c.id)),
         /* @__PURE__ */ jsx(Field, { label: "", children: /* @__PURE__ */ jsxs("div", { className: "flex gap-2", children: [
           /* @__PURE__ */ jsx("input", { value: newName, onChange: (e) => setNewName(e.target.value), onKeyDown: (e) => {

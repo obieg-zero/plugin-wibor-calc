@@ -1,6 +1,8 @@
 const __R=globalThis.__obieg.React;const{useState,useEffect,useCallback,useRef,useMemo,useReducer,useContext,createContext,createElement,Fragment,memo,forwardRef,useLayoutEffect,useId,useSyncExternalStore,useTransition,Component}=__R;
 const __J=globalThis.__obieg.jsxRuntime;const{jsx,jsxs,Fragment:_Fragment}=__J;
-// ../obieg-zero-plugins/wibor-calc/src/index.tsx
+// ../obieg-zero-plugins/wibor-calc/src/store.ts
+
+// ../obieg-zero-plugins/wibor-calc/src/calc.ts
 var plnFmt = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 var dateFmt = new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "2-digit", year: "numeric" });
 var formatPLN = (n) => plnFmt.format(n);
@@ -241,6 +243,8 @@ function calculateLoan(input) {
   }
   return { schedule, pastTotalPaid: a.pTP, pastPrincipalPaid: a.pPr, pastInterestTotal: a.pIT, pastInterestWibor: a.pIW, pastInterestMargin: a.pIM, pastInterestBridge: a.pIB, pastInstallmentsCount: a.pC, futureTotalToPay: a.fTP, futureInterestTotal: a.fIT, futureInterestWibor: a.fIW, futureInterestMargin: a.fIM, futureInstallmentsCount: a.fC, pastTotalPaidNoWibor: a.pTNW, pastInterestNoWibor: a.pINW, pastPrincipalNoWibor: a.pPNW, futureTotalNoWibor: a.fTNW, futureInterestNoWibor: a.fINW, overpaidInterest: a.pIT - a.pINW, futureSavings: a.fTP - a.fTNW, currentInstallment: a.cI, installmentNoWibor: a.cNW };
 }
+
+// ../obieg-zero-plugins/wibor-calc/src/store.ts
 var state = { cases: [], currentCaseId: null, input: null, wiborData: getDefaultWiborEntries(), ready: false };
 var subs = /* @__PURE__ */ new Set();
 var emit = () => subs.forEach((fn) => fn());
@@ -255,12 +259,9 @@ function useStore() {
   }, () => state);
 }
 var _host;
-var wiborCalcPlugin = (deps) => {
-  _host = deps.host;
-  const { Box, Cell, Tabs, Field, ListItem } = deps.ui;
-  const { DollarSign, Plus, X } = deps.icons;
-  const sdk = deps.sdk;
-  _host.db.getSetting("wibor:cases").then((raw) => {
+function initStore(host) {
+  _host = host;
+  host.db.getSetting("wibor:cases").then((raw) => {
     if (!raw) {
       set({ ready: true });
       return;
@@ -272,46 +273,59 @@ var wiborCalcPlugin = (deps) => {
       set({ ready: true });
     }
   });
-  function saveCases() {
-    _host.db.setSetting("wibor:cases", JSON.stringify(state.cases.map((c) => ({ ...c, input: c.input ? { ...c.input, startDate: toDateStr(c.input.startDate), bridgeEndDate: c.input.bridgeEndDate ? toDateStr(c.input.bridgeEndDate) : null } : null }))));
-  }
-  function createCase(name) {
-    const c = { id: crypto.randomUUID(), name, input: null };
-    set({ cases: [...state.cases, c], currentCaseId: c.id, input: null });
-    saveCases();
-  }
-  function removeCase(id) {
-    const cases = state.cases.filter((c) => c.id !== id);
-    const next = state.currentCaseId === id ? cases[0]?.id ?? null : state.currentCaseId;
-    set({ cases, currentCaseId: next, input: cases.find((c) => c.id === next)?.input ?? null });
-    saveCases();
-  }
-  function selectCase(id) {
-    const c = state.cases.find((c2) => c2.id === id);
-    if (c) set({ currentCaseId: id, input: c.input ?? null });
-  }
-  function updateInput(input) {
-    set({ input, cases: state.cases.map((c) => c.id === state.currentCaseId ? { ...c, input } : c) });
-    saveCases();
-  }
-  function useCalc() {
-    const { input, wiborData, currentCaseId, cases } = useStore();
-    return { input, result: useMemo(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]), caseId: currentCaseId, caseName: cases.find((c) => c.id === currentCaseId)?.name ?? null };
-  }
-  function useCases() {
-    const { cases, currentCaseId } = useStore();
-    return { cases, current: currentCaseId, select: selectCase, create: createCase, remove: removeCase };
-  }
-  sdk.registerProvider("wibor-calc", { useCalc, useCases });
-  const Ctx = createContext(null);
-  const useCtx = () => useContext(Ctx);
-  function Stat({ title, value, sub }) {
-    return /* @__PURE__ */ jsxs("div", { className: "bg-base-100 rounded-lg p-3", children: [
-      /* @__PURE__ */ jsx("div", { className: "text-2xs text-base-content/50", children: title }),
-      /* @__PURE__ */ jsx("div", { className: "text-lg font-bold", children: value }),
-      sub && /* @__PURE__ */ jsx("div", { className: "text-2xs text-base-content/40", children: sub })
-    ] });
-  }
+}
+function saveCases() {
+  _host.db.setSetting("wibor:cases", JSON.stringify(state.cases.map((c) => ({
+    ...c,
+    input: c.input ? { ...c.input, startDate: toDateStr(c.input.startDate), bridgeEndDate: c.input.bridgeEndDate ? toDateStr(c.input.bridgeEndDate) : null } : null
+  }))));
+}
+function createCase(name) {
+  const c = { id: crypto.randomUUID(), name, input: null };
+  set({ cases: [...state.cases, c], currentCaseId: c.id, input: null });
+  saveCases();
+}
+function removeCase(id) {
+  const cases = state.cases.filter((c) => c.id !== id);
+  const next = state.currentCaseId === id ? cases[0]?.id ?? null : state.currentCaseId;
+  set({ cases, currentCaseId: next, input: cases.find((c) => c.id === next)?.input ?? null });
+  saveCases();
+}
+function selectCase(id) {
+  const c = state.cases.find((c2) => c2.id === id);
+  if (c) set({ currentCaseId: id, input: c.input ?? null });
+}
+function updateInput(input) {
+  set({ input, cases: state.cases.map((c) => c.id === state.currentCaseId ? { ...c, input } : c) });
+  saveCases();
+}
+function useCalc() {
+  const { input, wiborData, currentCaseId, cases } = useStore();
+  return {
+    input,
+    caseId: currentCaseId,
+    caseName: cases.find((c) => c.id === currentCaseId)?.name ?? null,
+    result: useMemo(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData])
+  };
+}
+function useCases() {
+  const { cases, currentCaseId } = useStore();
+  return { cases, current: currentCaseId, select: selectCase, create: createCase, remove: removeCase };
+}
+
+// ../obieg-zero-plugins/wibor-calc/src/ui.tsx
+var Ctx = createContext(null);
+var useCtx = () => useContext(Ctx);
+function Stat({ title, value, sub }) {
+  return /* @__PURE__ */ jsxs("div", { className: "bg-base-100 rounded-lg p-3", children: [
+    /* @__PURE__ */ jsx("div", { className: "text-2xs text-base-content/50", children: title }),
+    /* @__PURE__ */ jsx("div", { className: "text-lg font-bold", children: value }),
+    sub && /* @__PURE__ */ jsx("div", { className: "text-2xs text-base-content/40", children: sub })
+  ] });
+}
+function createUI(ui, icons) {
+  const { Box, Cell, Tabs, Field, ListItem } = ui;
+  const { Plus, X } = icons;
   function Left() {
     const { cases, currentCaseId, input, ready } = useStore();
     const [newName, setNewName] = useState("");
@@ -359,7 +373,6 @@ var wiborCalcPlugin = (deps) => {
   }
   function SummaryTab() {
     const { result: r } = useCtx();
-    const pct = (v, t) => t > 0 ? `${(v / t * 100).toFixed(1)}%` : "0%";
     return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
       /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsxs("div", { className: "text-xs font-bold text-base-content/60 mb-2", children: [
@@ -400,7 +413,7 @@ var wiborCalcPlugin = (deps) => {
     const { result: r } = useCtx();
     const [filter, setFilter] = useState("all");
     const [showAll, setShowAll] = useState(false);
-    const filtered = useMemo(() => filter === "past" ? r.schedule.filter((x) => x.isPast) : filter === "future" ? r.schedule.filter((x) => !x.isPast) : r.schedule, [r.schedule, filter]);
+    const filtered = useMemo2(() => filter === "past" ? r.schedule.filter((x) => x.isPast) : filter === "future" ? r.schedule.filter((x) => !x.isPast) : r.schedule, [r.schedule, filter]);
     const displayed = showAll ? filtered : filtered.slice(0, 24);
     const pastCount = r.schedule.filter((x) => x.isPast).length;
     return /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
@@ -471,7 +484,7 @@ var wiborCalcPlugin = (deps) => {
   }
   function BreakdownTab() {
     const { result: r } = useCtx();
-    const Bar = ({ label, value, total, color }) => {
+    const BarEl = ({ label, value, total, color }) => {
       const pct = total > 0 ? value / total * 100 : 0;
       return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsx("div", { style: { width: "5rem" }, className: "text-2xs text-base-content/50 shrink-0", children: label }),
@@ -489,7 +502,7 @@ var wiborCalcPlugin = (deps) => {
     };
     const Sec = ({ title, segs, total, border }) => /* @__PURE__ */ jsxs("div", { className: border ? "border-t border-base-300 pt-3" : "", children: [
       /* @__PURE__ */ jsx("div", { className: "text-2xs font-bold uppercase tracking-wider text-base-content/50 mb-2", children: title }),
-      /* @__PURE__ */ jsx("div", { className: "space-y-1", children: segs.map((s) => /* @__PURE__ */ jsx(Bar, { label: s.l, value: s.v, total, color: s.c }, s.l + s.c)) }),
+      /* @__PURE__ */ jsx("div", { className: "space-y-1", children: segs.map((s) => /* @__PURE__ */ jsx(BarEl, { label: s.l, value: s.v, total, color: s.c }, s.l + s.c)) }),
       /* @__PURE__ */ jsxs("div", { className: `mt-1 text-right text-xs ${border ? "font-medium" : "text-base-content/40"}`, children: [
         "Lacznie: ",
         formatPLN(total)
@@ -505,7 +518,7 @@ var wiborCalcPlugin = (deps) => {
   function Center() {
     const { input, wiborData, currentCaseId, cases, ready } = useStore();
     const [tab, setTab] = useState("summary");
-    const result = useMemo(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
+    const result = useMemo2(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
     if (!ready) return null;
     if (!currentCaseId) return /* @__PURE__ */ jsx("div", { className: "flex-1 flex items-center justify-center", children: /* @__PURE__ */ jsxs("div", { className: "text-center space-y-3", children: [
       /* @__PURE__ */ jsx("div", { className: "text-2xl font-black text-primary tracking-tight", children: "KALKULATOR WIBOR" }),
@@ -530,7 +543,7 @@ var wiborCalcPlugin = (deps) => {
   }
   function Footer() {
     const { input, wiborData, currentCaseId } = useStore();
-    const result = useMemo(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
+    const result = useMemo2(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
     if (!result || !currentCaseId) return null;
     return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 px-3 text-2xs text-base-content/40", children: [
       /* @__PURE__ */ jsxs("span", { children: [
@@ -546,9 +559,27 @@ var wiborCalcPlugin = (deps) => {
       ] })
     ] });
   }
-  return { id: "wibor-calc", label: "Kalkulator WIBOR", description: "Sprawy kredytowe \u2014 kalkulator, harmonogram, porownanie z/bez WIBOR", icon: DollarSign, defaultEnabled: false, layout: { left: Left, center: Center, footer: Footer } };
+  return { Left, Center, Footer };
+}
+
+// ../obieg-zero-plugins/wibor-calc/src/index.tsx
+var plugin = (deps) => {
+  const host = deps.host;
+  const { DollarSign } = deps.icons;
+  const sdk = deps.sdk;
+  initStore(host);
+  sdk.registerProvider("wibor-calc", { useCalc, useCases });
+  const { Left, Center, Footer } = createUI(deps.ui, deps.icons);
+  return {
+    id: "wibor-calc",
+    label: "Kalkulator WIBOR",
+    description: "Sprawy kredytowe \u2014 kalkulator, harmonogram, porownanie z/bez WIBOR",
+    icon: DollarSign,
+    defaultEnabled: false,
+    layout: { left: Left, center: Center, footer: Footer }
+  };
 };
-var index_default = wiborCalcPlugin;
+var index_default = plugin;
 export {
   index_default as default
 };

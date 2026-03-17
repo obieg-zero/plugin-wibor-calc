@@ -413,7 +413,7 @@ function createUI(ui, icons) {
     const { result: r } = useCtx();
     const [filter, setFilter] = useState("all");
     const [showAll, setShowAll] = useState(false);
-    const filtered = useMemo2(() => filter === "past" ? r.schedule.filter((x) => x.isPast) : filter === "future" ? r.schedule.filter((x) => !x.isPast) : r.schedule, [r.schedule, filter]);
+    const filtered = useMemo(() => filter === "past" ? r.schedule.filter((x) => x.isPast) : filter === "future" ? r.schedule.filter((x) => !x.isPast) : r.schedule, [r.schedule, filter]);
     const displayed = showAll ? filtered : filtered.slice(0, 24);
     const pastCount = r.schedule.filter((x) => x.isPast).length;
     return /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
@@ -518,7 +518,7 @@ function createUI(ui, icons) {
   function Center() {
     const { input, wiborData, currentCaseId, cases, ready } = useStore();
     const [tab, setTab] = useState("summary");
-    const result = useMemo2(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
+    const result = useMemo(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
     if (!ready) return null;
     if (!currentCaseId) return /* @__PURE__ */ jsx("div", { className: "flex-1 flex items-center justify-center", children: /* @__PURE__ */ jsxs("div", { className: "text-center space-y-3", children: [
       /* @__PURE__ */ jsx("div", { className: "text-2xl font-black text-primary tracking-tight", children: "KALKULATOR WIBOR" }),
@@ -543,7 +543,7 @@ function createUI(ui, icons) {
   }
   function Footer() {
     const { input, wiborData, currentCaseId } = useStore();
-    const result = useMemo2(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
+    const result = useMemo(() => input ? calculateLoan({ ...input, wiborData }) : null, [input, wiborData]);
     if (!result || !currentCaseId) return null;
     return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 px-3 text-2xs text-base-content/40", children: [
       /* @__PURE__ */ jsxs("span", { children: [

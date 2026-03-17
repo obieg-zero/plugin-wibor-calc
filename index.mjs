@@ -337,7 +337,7 @@ function createUI(ui, icons) {
     useEffect(() => {
       if (input) setF({ amount: String(input.loanAmount), margin: String(input.margin), months: String(input.loanPeriodMonths), start: toDateStr(input.startDate), day: String(input.paymentDay), bridge: String(input.bridgeMargin), bridgeEnd: input.bridgeEndDate ? toDateStr(input.bridgeEndDate) : "" });
       else setF({ amount: "300000", margin: "2.0", months: "360", start: "2018-01-01", day: "15", bridge: "0", bridgeEnd: "" });
-    }, [currentCaseId, input]);
+    }, [currentCaseId]);
     const upd = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
     const handleCalc = () => updateInput({ loanAmount: parseFloat(f.amount) || 0, margin: parseFloat(f.margin) || 0, loanPeriodMonths: parseInt(f.months) || 360, startDate: new Date(f.start), paymentDay: parseInt(f.day) || 15, bridgeMargin: parseFloat(f.bridge) || 0, bridgeEndDate: f.bridgeEnd ? new Date(f.bridgeEnd) : null });
     if (!ready) return null;

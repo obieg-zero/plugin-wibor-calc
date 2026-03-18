@@ -320,15 +320,8 @@ var { jsx, jsxs, Fragment: Fragment2 } = J;
 // ../obieg-zero-plugins/wibor-calc/src/ui.tsx
 var Ctx = createContext(null);
 var useCtx = () => useContext(Ctx);
-function Stat({ title, value, sub }) {
-  return /* @__PURE__ */ jsxs("div", { className: "bg-base-100 rounded-lg p-3", children: [
-    /* @__PURE__ */ jsx("div", { className: "text-2xs text-base-content/50", children: title }),
-    /* @__PURE__ */ jsx("div", { className: "text-lg font-bold", children: value }),
-    sub && /* @__PURE__ */ jsx("div", { className: "text-2xs text-base-content/40", children: sub })
-  ] });
-}
 function createUI(ui, icons) {
-  const { Box, Cell, Tabs, Field, ListItem } = ui;
+  const { Box, Cell, Tabs, Field, ListItem, Section, Stat, DataTable } = ui;
   const { Plus, X } = icons;
   function Left() {
     const { cases, currentCaseId, input, ready } = useStore();
@@ -377,40 +370,23 @@ function createUI(ui, icons) {
   }
   function SummaryTab() {
     const { result: r } = useCtx();
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsxs("div", { className: "text-xs font-bold text-base-content/60 mb-2", children: [
-          "Dotychczasowe splaty (",
-          r.pastInstallmentsCount,
-          " rat)"
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-2", children: [
-          /* @__PURE__ */ jsx(Stat, { title: "Wplacono lacznie", value: formatPLN(r.pastTotalPaid), sub: "Kapital + odsetki" }),
-          /* @__PURE__ */ jsx(Stat, { title: "Splacony kapital", value: formatPLN(r.pastPrincipalPaid) }),
-          /* @__PURE__ */ jsx(Stat, { title: "Zaplacone odsetki", value: formatPLN(r.pastInterestTotal), sub: `WIBOR: ${formatPLN(r.pastInterestWibor)} | Marza: ${formatPLN(r.pastInterestMargin)}` })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsxs("div", { className: "text-xs font-bold text-base-content/60 mb-2", children: [
-          "Przyszle splaty (",
-          r.futureInstallmentsCount,
-          " rat)"
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-2", children: [
-          /* @__PURE__ */ jsx(Stat, { title: "Do splaty lacznie", value: formatPLN(r.futureTotalToPay), sub: "Przy obecnym WIBOR" }),
-          /* @__PURE__ */ jsx(Stat, { title: "Obecna rata", value: formatPLN(r.currentInstallment), sub: "Z WIBOR + marza" }),
-          /* @__PURE__ */ jsx(Stat, { title: "Przyszle odsetki", value: formatPLN(r.futureInterestTotal) })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "border-t border-base-300 pt-3", children: [
-        /* @__PURE__ */ jsx("div", { className: "text-xs font-bold text-success mb-2", children: "Scenariusz: kredyt bez WIBOR" }),
-        /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }, className: "gap-2", children: [
-          /* @__PURE__ */ jsx(Stat, { title: "Roznica w odsetkach", value: formatPLN(r.overpaidInterest), sub: "Nadplata z WIBOR" }),
-          /* @__PURE__ */ jsx(Stat, { title: "Oszczednosc", value: formatPLN(r.futureSavings), sub: "Nizsze raty" }),
-          /* @__PURE__ */ jsx(Stat, { title: "Laczna korzysc", value: formatPLN(r.overpaidInterest + r.futureSavings), sub: "Nadplata + oszczednosc" }),
-          /* @__PURE__ */ jsx(Stat, { title: "Rata bez WIBOR", value: formatPLN(r.installmentNoWibor), sub: `-${formatPLN(r.currentInstallment - r.installmentNoWibor)}/mies.` })
-        ] })
-      ] })
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsx(Section, { title: "Dotychczasowe splaty", meta: `${r.pastInstallmentsCount} rat`, children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-6", children: [
+        /* @__PURE__ */ jsx(Stat, { title: "Wplacono lacznie", value: formatPLN(r.pastTotalPaid), sub: "Kapital + odsetki" }),
+        /* @__PURE__ */ jsx(Stat, { title: "Splacony kapital", value: formatPLN(r.pastPrincipalPaid) }),
+        /* @__PURE__ */ jsx(Stat, { title: "Zaplacone odsetki", value: formatPLN(r.pastInterestTotal), sub: `WIBOR: ${formatPLN(r.pastInterestWibor)} \xB7 Marza: ${formatPLN(r.pastInterestMargin)}` })
+      ] }) }),
+      /* @__PURE__ */ jsx(Section, { title: "Przyszle splaty", meta: `${r.futureInstallmentsCount} rat`, children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-6", children: [
+        /* @__PURE__ */ jsx(Stat, { title: "Do splaty lacznie", value: formatPLN(r.futureTotalToPay), sub: "Przy obecnym WIBOR" }),
+        /* @__PURE__ */ jsx(Stat, { title: "Obecna rata", value: formatPLN(r.currentInstallment), sub: "Z WIBOR + marza" }),
+        /* @__PURE__ */ jsx(Stat, { title: "Przyszle odsetki", value: formatPLN(r.futureInterestTotal) })
+      ] }) }),
+      /* @__PURE__ */ jsx(Section, { title: "Scenariusz: kredyt bez WIBOR", children: /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-4 gap-6", children: [
+        /* @__PURE__ */ jsx(Stat, { title: "Roznica w odsetkach", value: formatPLN(r.overpaidInterest), sub: "Nadplata z WIBOR", highlight: true }),
+        /* @__PURE__ */ jsx(Stat, { title: "Oszczednosc", value: formatPLN(r.futureSavings), sub: "Nizsze raty", highlight: true }),
+        /* @__PURE__ */ jsx(Stat, { title: "Laczna korzysc", value: formatPLN(r.overpaidInterest + r.futureSavings), sub: "Nadplata + oszczednosc", highlight: true }),
+        /* @__PURE__ */ jsx(Stat, { title: "Rata bez WIBOR", value: formatPLN(r.installmentNoWibor), sub: `-${formatPLN(r.currentInstallment - r.installmentNoWibor)}/mies.` })
+      ] }) })
     ] });
   }
   function ScheduleTab() {
@@ -420,7 +396,7 @@ function createUI(ui, icons) {
     const filtered = useMemo(() => filter === "past" ? r.schedule.filter((x) => x.isPast) : filter === "future" ? r.schedule.filter((x) => !x.isPast) : r.schedule, [r.schedule, filter]);
     const displayed = showAll ? filtered : filtered.slice(0, 24);
     const pastCount = r.schedule.filter((x) => x.isPast).length;
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
       /* @__PURE__ */ jsx(Tabs, { active: filter, onSelect: (id) => {
         setFilter(id);
         setShowAll(false);
@@ -436,64 +412,50 @@ function createUI(ui, icons) {
           /* @__PURE__ */ jsx("th", { className: "text-right", children: "WIBOR" }),
           /* @__PURE__ */ jsx("th", { className: "text-right", children: "Saldo" })
         ] }) }),
-        /* @__PURE__ */ jsx("tbody", { children: displayed.map((row) => /* @__PURE__ */ jsxs("tr", { className: row.isPast ? "" : "opacity-50", children: [
-          /* @__PURE__ */ jsx("td", { children: row.number }),
-          /* @__PURE__ */ jsx("td", { children: formatDate(row.date) }),
-          /* @__PURE__ */ jsx("td", { className: "text-right font-medium", children: formatPLN(row.installment) }),
-          /* @__PURE__ */ jsx("td", { className: "text-right", children: formatPLN(row.principal) }),
-          /* @__PURE__ */ jsx("td", { className: "text-right text-error", children: formatPLN(row.interestWibor) }),
-          /* @__PURE__ */ jsx("td", { className: "text-right text-primary", children: formatPLN(row.interestMargin) }),
-          /* @__PURE__ */ jsx("td", { className: "text-right text-base-content/40", children: formatPct(row.wiborRate) }),
-          /* @__PURE__ */ jsx("td", { className: "text-right font-medium", children: formatPLN(row.remainingBalance) })
+        /* @__PURE__ */ jsx("tbody", { children: displayed.map((row) => /* @__PURE__ */ jsxs("tr", { className: row.isPast ? "" : "opacity-40", children: [
+          /* @__PURE__ */ jsx("td", { className: "tabular-nums", children: row.number }),
+          /* @__PURE__ */ jsx("td", { className: "tabular-nums", children: formatDate(row.date) }),
+          /* @__PURE__ */ jsx("td", { className: "text-right tabular-nums font-medium", children: formatPLN(row.installment) }),
+          /* @__PURE__ */ jsx("td", { className: "text-right tabular-nums", children: formatPLN(row.principal) }),
+          /* @__PURE__ */ jsx("td", { className: "text-right tabular-nums text-error", children: formatPLN(row.interestWibor) }),
+          /* @__PURE__ */ jsx("td", { className: "text-right tabular-nums text-primary", children: formatPLN(row.interestMargin) }),
+          /* @__PURE__ */ jsx("td", { className: "text-right tabular-nums text-base-content/40", children: formatPct(row.wiborRate) }),
+          /* @__PURE__ */ jsx("td", { className: "text-right tabular-nums font-medium", children: formatPLN(row.remainingBalance) })
         ] }, row.number)) })
       ] }) }),
-      filtered.length > 24 && /* @__PURE__ */ jsx("button", { onClick: () => setShowAll(!showAll), className: "btn btn-ghost btn-xs", children: showAll ? "Pokaz mniej" : `Pokaz wszystkie ${filtered.length} rat` })
+      filtered.length > 24 && /* @__PURE__ */ jsx("button", { onClick: () => setShowAll(!showAll), className: "btn btn-ghost btn-xs w-full", children: showAll ? "Pokaz mniej" : `Pokaz wszystkie ${filtered.length} rat` })
     ] });
   }
   function ComparisonTab() {
     const { result: r } = useCtx();
-    const Row = ({ label, w, nw, hl }) => {
+    const diff = (w, nw) => {
       const d = w - nw;
-      return /* @__PURE__ */ jsxs("tr", { className: hl ? "bg-success/10 font-bold" : "", children: [
-        /* @__PURE__ */ jsx("td", { children: label }),
-        /* @__PURE__ */ jsx("td", { className: "text-right", children: formatPLN(w) }),
-        /* @__PURE__ */ jsx("td", { className: "text-right", children: formatPLN(nw) }),
-        /* @__PURE__ */ jsx("td", { className: "text-right", children: d > 0.01 ? /* @__PURE__ */ jsxs("span", { className: "badge badge-success badge-xs", children: [
-          "+",
-          formatPLN(d)
-        ] }) : /* @__PURE__ */ jsx("span", { className: "text-base-content/30", children: "-" }) })
-      ] });
+      return d > 0.01 ? /* @__PURE__ */ jsxs("span", { className: "text-success", children: [
+        "+",
+        formatPLN(d)
+      ] }) : /* @__PURE__ */ jsx("span", { className: "text-base-content/30", children: "\u2014" });
     };
-    const Sec = ({ label }) => /* @__PURE__ */ jsx("tr", { className: "bg-base-200/50", children: /* @__PURE__ */ jsx("td", { colSpan: 4, className: "text-2xs font-bold uppercase tracking-wider text-base-content/50", children: label }) });
-    return /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "table table-sm", children: [
-      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { children: [
-        /* @__PURE__ */ jsx("th", { children: "Pozycja" }),
-        /* @__PURE__ */ jsx("th", { className: "text-right", children: "Z WIBOR" }),
-        /* @__PURE__ */ jsx("th", { className: "text-right", children: "Bez WIBOR" }),
-        /* @__PURE__ */ jsx("th", { className: "text-right text-success", children: "Korzysc" })
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsx(Section, { title: "Dotychczasowe splaty", children: /* @__PURE__ */ jsx(DataTable, { columns: ["Pozycja", "Z WIBOR", "Bez WIBOR", "Korzysc"], rows: [
+        ["Wplacono lacznie", formatPLN(r.pastTotalPaid), formatPLN(r.pastTotalPaidNoWibor), diff(r.pastTotalPaid, r.pastTotalPaidNoWibor)],
+        ["Zaplacony kapital", formatPLN(r.pastPrincipalPaid), formatPLN(r.pastPrincipalNoWibor), diff(r.pastPrincipalPaid, r.pastPrincipalNoWibor)],
+        ["Zaplacone odsetki", formatPLN(r.pastInterestTotal), formatPLN(r.pastInterestNoWibor), diff(r.pastInterestTotal, r.pastInterestNoWibor)]
       ] }) }),
-      /* @__PURE__ */ jsxs("tbody", { children: [
-        /* @__PURE__ */ jsx(Sec, { label: "Dotychczasowe splaty" }),
-        /* @__PURE__ */ jsx(Row, { label: "Wplacono lacznie", w: r.pastTotalPaid, nw: r.pastTotalPaidNoWibor }),
-        /* @__PURE__ */ jsx(Row, { label: "Zaplacony kapital", w: r.pastPrincipalPaid, nw: r.pastPrincipalNoWibor }),
-        /* @__PURE__ */ jsx(Row, { label: "Zaplacone odsetki", w: r.pastInterestTotal, nw: r.pastInterestNoWibor }),
-        /* @__PURE__ */ jsx(Sec, { label: "Przyszle splaty" }),
-        /* @__PURE__ */ jsx(Row, { label: "Do splaty lacznie", w: r.futureTotalToPay, nw: r.futureTotalNoWibor }),
-        /* @__PURE__ */ jsx(Row, { label: "Przyszle odsetki", w: r.futureInterestTotal, nw: r.futureInterestNoWibor }),
-        /* @__PURE__ */ jsx(Row, { label: "Rata miesieczna", w: r.currentInstallment, nw: r.installmentNoWibor }),
-        /* @__PURE__ */ jsx(Sec, { label: "Podsumowanie" }),
-        /* @__PURE__ */ jsx(Row, { label: "Calkowity koszt kredytu", w: r.pastTotalPaid + r.futureTotalToPay, nw: r.pastTotalPaidNoWibor + r.futureTotalNoWibor, hl: true })
-      ] })
-    ] }) });
+      /* @__PURE__ */ jsx(Section, { title: "Przyszle splaty", children: /* @__PURE__ */ jsx(DataTable, { columns: ["Pozycja", "Z WIBOR", "Bez WIBOR", "Korzysc"], rows: [
+        ["Do splaty lacznie", formatPLN(r.futureTotalToPay), formatPLN(r.futureTotalNoWibor), diff(r.futureTotalToPay, r.futureTotalNoWibor)],
+        ["Przyszle odsetki", formatPLN(r.futureInterestTotal), formatPLN(r.futureInterestNoWibor), diff(r.futureInterestTotal, r.futureInterestNoWibor)],
+        ["Rata miesieczna", formatPLN(r.currentInstallment), formatPLN(r.installmentNoWibor), diff(r.currentInstallment, r.installmentNoWibor)]
+      ], summary: ["Calkowity koszt", formatPLN(r.pastTotalPaid + r.futureTotalToPay), formatPLN(r.pastTotalPaidNoWibor + r.futureTotalNoWibor), diff(r.pastTotalPaid + r.futureTotalToPay, r.pastTotalPaidNoWibor + r.futureTotalNoWibor)] }) })
+    ] });
   }
   function BreakdownTab() {
     const { result: r } = useCtx();
     const BarEl = ({ label, value, total, color }) => {
       const pct = total > 0 ? value / total * 100 : 0;
-      return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ jsx("div", { style: { width: "5rem" }, className: "text-2xs text-base-content/50 shrink-0", children: label }),
+      return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "w-20 text-2xs text-base-content/50 shrink-0", children: label }),
         /* @__PURE__ */ jsx("progress", { className: `progress ${color} flex-1`, value: pct, max: 100 }),
-        /* @__PURE__ */ jsxs("div", { style: { width: "7rem" }, className: "text-right text-xs font-medium shrink-0", children: [
+        /* @__PURE__ */ jsxs("div", { className: "w-28 text-right text-xs tabular-nums shrink-0", children: [
           formatPLN(value),
           " ",
           /* @__PURE__ */ jsxs("span", { className: "text-base-content/30 text-2xs", children: [
@@ -504,19 +466,18 @@ function createUI(ui, icons) {
         ] })
       ] });
     };
-    const Sec = ({ title, segs, total, border }) => /* @__PURE__ */ jsxs("div", { className: border ? "border-t border-base-300 pt-3" : "", children: [
-      /* @__PURE__ */ jsx("div", { className: "text-2xs font-bold uppercase tracking-wider text-base-content/50 mb-2", children: title }),
-      /* @__PURE__ */ jsx("div", { className: "space-y-1", children: segs.map((s) => /* @__PURE__ */ jsx(BarEl, { label: s.l, value: s.v, total, color: s.c }, s.l + s.c)) }),
-      /* @__PURE__ */ jsxs("div", { className: `mt-1 text-right text-xs ${border ? "font-medium" : "text-base-content/40"}`, children: [
+    const Segs = ({ segs, total }) => /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+      segs.map((s) => /* @__PURE__ */ jsx(BarEl, { label: s.l, value: s.v, total, color: s.c }, s.l + s.c)),
+      /* @__PURE__ */ jsxs("div", { className: "text-right text-xs text-base-content/40", children: [
         "Lacznie: ",
         formatPLN(total)
       ] })
     ] });
     const tw = r.pastInterestWibor + r.futureInterestWibor, tm = r.pastInterestMargin + r.futureInterestMargin, tt = r.pastInterestTotal + r.futureInterestTotal;
-    return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
-      /* @__PURE__ */ jsx(Sec, { title: "Odsetki zaplacone (do dzis)", total: r.pastInterestTotal, segs: [{ l: "WIBOR", v: r.pastInterestWibor, c: "progress-error" }, { l: "Marza", v: r.pastInterestMargin, c: "progress-primary" }, ...r.pastInterestBridge > 0 ? [{ l: "Pomostowa", v: r.pastInterestBridge, c: "progress-warning" }] : []] }),
-      r.futureInterestTotal > 0 && /* @__PURE__ */ jsx(Sec, { title: "Odsetki przyszle (prognoza)", total: r.futureInterestTotal, segs: [{ l: "WIBOR", v: r.futureInterestWibor, c: "progress-error" }, { l: "Marza", v: r.futureInterestMargin, c: "progress-primary" }] }),
-      /* @__PURE__ */ jsx(Sec, { border: true, title: "Laczne odsetki za caly okres", total: tt, segs: [{ l: "WIBOR", v: tw, c: "progress-error" }, { l: "Marza", v: tm, c: "progress-primary" }] })
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsx(Section, { title: "Odsetki zaplacone", meta: "do dzis", children: /* @__PURE__ */ jsx(Segs, { total: r.pastInterestTotal, segs: [{ l: "WIBOR", v: r.pastInterestWibor, c: "progress-error" }, { l: "Marza", v: r.pastInterestMargin, c: "progress-primary" }, ...r.pastInterestBridge > 0 ? [{ l: "Pomostowa", v: r.pastInterestBridge, c: "progress-warning" }] : []] }) }),
+      r.futureInterestTotal > 0 && /* @__PURE__ */ jsx(Section, { title: "Odsetki przyszle", meta: "prognoza", children: /* @__PURE__ */ jsx(Segs, { total: r.futureInterestTotal, segs: [{ l: "WIBOR", v: r.futureInterestWibor, c: "progress-error" }, { l: "Marza", v: r.futureInterestMargin, c: "progress-primary" }] }) }),
+      /* @__PURE__ */ jsx(Section, { title: "Laczne odsetki za caly okres", children: /* @__PURE__ */ jsx(Segs, { total: tt, segs: [{ l: "WIBOR", v: tw, c: "progress-error" }, { l: "Marza", v: tm, c: "progress-primary" }] }) })
     ] });
   }
   function Center() {
@@ -535,7 +496,7 @@ function createUI(ui, icons) {
       ] }),
       /* @__PURE__ */ jsx("p", { className: "text-xs text-base-content/40", children: "Wypelnij parametry i kliknij Oblicz" })
     ] }) });
-    return /* @__PURE__ */ jsx(Ctx.Provider, { value: { input, result }, children: /* @__PURE__ */ jsxs("div", { className: "flex-1 min-h-0 flex flex-col p-2 space-y-2", children: [
+    return /* @__PURE__ */ jsx(Ctx.Provider, { value: { input, result }, children: /* @__PURE__ */ jsxs("div", { className: "flex-1 min-h-0 flex flex-col p-4 space-y-4", children: [
       /* @__PURE__ */ jsx(Tabs, { active: tab, onSelect: setTab, items: [{ id: "summary", label: "Podsumowanie" }, { id: "schedule", label: "Harmonogram" }, { id: "comparison", label: "Porownanie" }, { id: "breakdown", label: "Rozbicie" }] }),
       /* @__PURE__ */ jsxs("div", { className: "flex-1 min-h-0 overflow-y-auto", children: [
         tab === "summary" && /* @__PURE__ */ jsx(SummaryTab, {}),

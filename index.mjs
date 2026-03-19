@@ -1,6 +1,6 @@
 // ../obieg-zero-plugins/.shims/react.mjs
 var R = globalThis.__obieg.React;
-var { useState, useEffect, useCallback, useRef, useMemo, useReducer, useContext, createContext, createElement, Fragment, memo, forwardRef, useLayoutEffect, useId, useSyncExternalStore, useTransition, Component } = R;
+var { useState, useEffect, useCallback, useRef, useMemo, useReducer, useContext, createContext, createElement, Fragment, memo, forwardRef, useLayoutEffect, useId, useSyncExternalStore, useTransition, useDebugValue, Component } = R;
 
 // ../obieg-zero-plugins/wibor-calc/src/calc.ts
 var plnFmt = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -171,6 +171,45 @@ var ann = (b, r, m) => {
   return b * (rm * f) / (f - 1);
 };
 var int = (b, p, d) => b * (p / 100) * d / 360;
+function explainInstallment(row, input) {
+  const prevBal = row.remainingBalance + row.principal;
+  const totalRate = row.wiborRate + input.margin + (input.bridgeEndDate && row.date <= input.bridgeEndDate ? input.bridgeMargin : 0);
+  return [
+    { label: "Stawka WIBOR 3M", formula: `Ostatnia znana wartosc przed data raty`, value: formatPct(row.wiborRate) },
+    { label: "Laczna stopa", formula: `WIBOR ${formatPct(row.wiborRate)} + marza ${formatPct(input.margin)}${row.interestBridge > 0 ? ` + pomostowa ${formatPct(input.bridgeMargin)}` : ""}`, value: formatPct(totalRate) },
+    { label: "Odsetki WIBOR", formula: `${formatPLN(prevBal)} \xD7 ${formatPct(row.wiborRate)} \xD7 ${row.days} / 360`, value: formatPLN(row.interestWibor) },
+    { label: "Odsetki marza", formula: `${formatPLN(prevBal)} \xD7 ${formatPct(input.margin)} \xD7 ${row.days} / 360`, value: formatPLN(row.interestMargin) },
+    ...row.interestBridge > 0 ? [{ label: "Odsetki pomostowa", formula: `${formatPLN(prevBal)} \xD7 ${formatPct(input.bridgeMargin)} \xD7 ${row.days} / 360`, value: formatPLN(row.interestBridge) }] : [],
+    { label: "Odsetki lacznie", formula: `${formatPLN(row.interestWibor)} + ${formatPLN(row.interestMargin)}${row.interestBridge > 0 ? ` + ${formatPLN(row.interestBridge)}` : ""}`, value: formatPLN(row.interestTotal) },
+    { label: "Rata annuitetowa", formula: `S \xD7 (r\xD7(1+r)^n) / ((1+r)^n \u2212 1)`, value: formatPLN(row.installment) },
+    { label: "Kapital", formula: `rata ${formatPLN(row.installment)} \u2212 odsetki ${formatPLN(row.interestTotal)}`, value: formatPLN(row.principal) },
+    { label: "Saldo po splacie", formula: `${formatPLN(prevBal)} \u2212 ${formatPLN(row.principal)}`, value: formatPLN(row.remainingBalance) }
+  ];
+}
+function explainMetric(key, r, input) {
+  switch (key) {
+    case "overpaidInterest":
+      return [
+        { label: "Odsetki z WIBOR", formula: "Suma odsetek w ratach dotychczasowych", value: formatPLN(r.pastInterestTotal) },
+        { label: "Odsetki bez WIBOR", formula: "Tylko marza banku", value: formatPLN(r.pastInterestNoWibor) },
+        { label: "Nadplata", formula: `${formatPLN(r.pastInterestTotal)} \u2212 ${formatPLN(r.pastInterestNoWibor)}`, value: formatPLN(r.overpaidInterest) }
+      ];
+    case "futureSavings":
+      return [
+        { label: "Przyszle z WIBOR", formula: "Suma przyszlych rat z WIBOR", value: formatPLN(r.futureTotalToPay) },
+        { label: "Przyszle bez WIBOR", formula: "Suma przyszlych rat tylko marza", value: formatPLN(r.futureTotalNoWibor) },
+        { label: "Oszczednosc", formula: `${formatPLN(r.futureTotalToPay)} \u2212 ${formatPLN(r.futureTotalNoWibor)}`, value: formatPLN(r.futureSavings) }
+      ];
+    case "totalBenefit":
+      return [
+        { label: "Nadplata dotychczasowa", formula: "Odsetki z WIBOR \u2212 bez WIBOR (przeszlosc)", value: formatPLN(r.overpaidInterest) },
+        { label: "Oszczednosc przyszla", formula: "Raty z WIBOR \u2212 bez WIBOR (przyszlosc)", value: formatPLN(r.futureSavings) },
+        { label: "Lacznie", formula: `${formatPLN(r.overpaidInterest)} + ${formatPLN(r.futureSavings)}`, value: formatPLN(r.overpaidInterest + r.futureSavings) }
+      ];
+    default:
+      return [];
+  }
+}
 function calculateLoan(input) {
   const today = /* @__PURE__ */ new Date();
   today.setHours(0, 0, 0, 0);
@@ -525,6 +564,58 @@ function createUI(ui, icons) {
       ] })
     ] });
   }
+  function ExplainTab() {
+    const ctx = useCtx();
+    if (!ctx) return null;
+    const { input, result: r } = ctx;
+    const [expanded, setExpanded] = useState(null);
+    const metrics = [
+      { key: "totalBenefit", label: "Lacjna korzysc", value: formatPLN(r.overpaidInterest + r.futureSavings) },
+      { key: "overpaidInterest", label: "Nadplata odsetek", value: formatPLN(r.overpaidInterest) },
+      { key: "futureSavings", label: "Przyszla oszczednosc", value: formatPLN(r.futureSavings) }
+    ];
+    return /* @__PURE__ */ jsxs("div", { className: "space-y-8", children: [
+      /* @__PURE__ */ jsx("div", { className: "text-xs uppercase tracking-wider font-semibold text-base-content/40", children: "Wyjasnienia metryk" }),
+      metrics.map((m) => {
+        const steps = explainMetric(m.key, r, input);
+        return /* @__PURE__ */ jsxs("div", { className: "rounded-xl border border-base-300 p-4 space-y-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex justify-between items-center", children: [
+            /* @__PURE__ */ jsx("div", { className: "text-sm font-semibold", children: m.label }),
+            /* @__PURE__ */ jsx("div", { className: "text-sm font-bold tabular-nums", children: m.value })
+          ] }),
+          steps.map((s, i) => /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-3 pl-2 border-l-2 border-base-300", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+              /* @__PURE__ */ jsx("div", { className: "text-xs font-medium", children: s.label }),
+              /* @__PURE__ */ jsx("div", { className: "text-xs text-base-content/40 font-mono", children: s.formula })
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "text-xs font-bold tabular-nums", children: s.value })
+          ] }, i))
+        ] }, m.key);
+      }),
+      /* @__PURE__ */ jsx("div", { className: "text-xs uppercase tracking-wider font-semibold text-base-content/40 pt-4", children: "Wyjasnienia rat (kliknij aby rozwinac)" }),
+      r.schedule.slice(0, 12).map((row, i) => /* @__PURE__ */ jsxs("div", { className: "rounded-xl border border-base-300 overflow-hidden", children: [
+        /* @__PURE__ */ jsxs("button", { onClick: () => setExpanded(expanded === i ? null : i), className: `w-full flex items-center gap-3 p-3 text-left hover:bg-base-200/50 ${row.isPast ? "" : "text-base-content/40"}`, children: [
+          /* @__PURE__ */ jsxs("span", { className: "text-xs tabular-nums w-8", children: [
+            "#",
+            row.number
+          ] }),
+          /* @__PURE__ */ jsx("span", { className: "text-xs tabular-nums flex-1", children: formatDate(row.date) }),
+          /* @__PURE__ */ jsx("span", { className: "text-xs tabular-nums font-medium", children: formatPLN(row.installment) })
+        ] }),
+        expanded === i && /* @__PURE__ */ jsx("div", { className: "p-3 pt-0 space-y-2 border-t border-base-300", children: explainInstallment(row, input).map((s, j) => /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-3 pl-2 border-l-2 border-base-300", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex-1", children: [
+            /* @__PURE__ */ jsx("div", { className: "text-xs font-medium", children: s.label }),
+            /* @__PURE__ */ jsx("div", { className: "text-xs text-base-content/40 font-mono", children: s.formula })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "text-xs font-bold tabular-nums", children: s.value })
+        ] }, j)) })
+      ] }, row.number)),
+      r.schedule.length > 12 && /* @__PURE__ */ jsxs("div", { className: "text-xs text-base-content/30 text-center", children: [
+        "Pokazano pierwsze 12 rat z ",
+        r.schedule.length
+      ] })
+    ] });
+  }
   function Center() {
     const { input, wiborData, currentCaseId, cases, ready } = useStore();
     const [tab, setTab] = useState("summary");
@@ -542,12 +633,13 @@ function createUI(ui, icons) {
       /* @__PURE__ */ jsx("p", { className: "text-xs text-base-content/40", children: "Wype\u0142nij parametry i kliknij Oblicz" })
     ] }) });
     return /* @__PURE__ */ jsx(Ctx.Provider, { value: { input, result }, children: /* @__PURE__ */ jsxs("div", { className: "flex-1 min-h-0 flex flex-col p-6 space-y-6", children: [
-      /* @__PURE__ */ jsx(Tabs, { active: tab, onSelect: setTab, items: [{ id: "summary", label: "Podsumowanie" }, { id: "schedule", label: "Harmonogram" }, { id: "comparison", label: "Por\xF3wnanie" }, { id: "breakdown", label: "Rozbicie" }] }),
+      /* @__PURE__ */ jsx(Tabs, { active: tab, onSelect: setTab, items: [{ id: "summary", label: "Podsumowanie" }, { id: "schedule", label: "Harmonogram" }, { id: "comparison", label: "Por\xF3wnanie" }, { id: "breakdown", label: "Rozbicie" }, { id: "explain", label: "Wyja\u015Bnienia" }] }),
       /* @__PURE__ */ jsxs("div", { className: "flex-1 min-h-0 overflow-y-auto", children: [
         tab === "summary" && /* @__PURE__ */ jsx(SummaryTab, {}),
         tab === "schedule" && /* @__PURE__ */ jsx(ScheduleTab, {}),
         tab === "comparison" && /* @__PURE__ */ jsx(ComparisonTab, {}),
-        tab === "breakdown" && /* @__PURE__ */ jsx(BreakdownTab, {})
+        tab === "breakdown" && /* @__PURE__ */ jsx(BreakdownTab, {}),
+        tab === "explain" && /* @__PURE__ */ jsx(ExplainTab, {})
       ] })
     ] }) });
   }
@@ -566,7 +658,7 @@ var plugin = (deps) => {
   const { DollarSign } = deps.icons;
   const sdk = deps.sdk;
   initStore(host);
-  sdk.registerProvider("wibor-calc", { useCalc, useCases });
+  sdk.registerProvider("wibor-calc", { useCalc, useCases, explainMetric, explainInstallment });
   const { Left, Center, Footer } = createUI(deps.ui, deps.icons);
   return {
     id: "wibor-calc",

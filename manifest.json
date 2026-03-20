@@ -2,7 +2,7 @@
   "id": "wibor-calc",
   "label": "Kalkulator WIBOR",
   "description": "Kalkulator kredytu hipotecznego — sprawy, harmonogram, porownanie z/bez WIBOR",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "author": "obieg-zero",
   "entry": "index.mjs",
   "requires": [],
@@ -12,5 +12,6 @@
     "credit",
     "kancelaria"
   ],
-  "defaultSettings": {}
+  "defaultSettings": {},
+  "order": 4
 }

@@ -1,4 +1,4 @@
-import { jsx, jsxs, Fragment } from "react/jsx-runtime";
+import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 const plnFmt = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const plnFmt0 = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", maximumFractionDigits: 0 });
 const dateFmt = new Intl.DateTimeFormat("pl-PL", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -135,8 +135,34 @@ const plugin = ({ React, store, ui, icons, sdk }) => {
     /* @__PURE__ */ jsx(ui.Value, { size: "sm", bold: !!color, color, children: value })
   ] });
   const KVCard = ({ title, rows }) => /* @__PURE__ */ jsx(ui.Card, { title, children: /* @__PURE__ */ jsx(ui.Stack, { children: rows.map(([l, v, c], i) => KV(l, v, c)) }) });
+  function useCaseDefaults() {
+    const caseId = sdk.shared((s) => {
+      var _a;
+      return (_a = s.crm) == null ? void 0 : _a.caseId;
+    });
+    const cases = store.usePosts("case");
+    const opponents = store.usePosts("opponent");
+    const templates = store.usePosts("opponent-template");
+    if (!caseId) return null;
+    const cas = cases.find((c) => c.id === caseId);
+    if (!cas) return null;
+    const opponentId = cas.data.opponent;
+    const opponent = opponentId ? opponents.find((o) => o.id === opponentId) : null;
+    const template = opponent ? templates.find((t) => t.parentId === opponent.id) : null;
+    return {
+      loanAmount: Number(cas.data.loanAmount) || 3e5,
+      startDate: cas.data.loanDate || "2018-01-01",
+      margin: Number(template == null ? void 0 : template.data.margin) || 2,
+      bridgeMargin: Number(template == null ? void 0 : template.data.bridgeMargin) || 0,
+      wiborTenor: (template == null ? void 0 : template.data.wiborType) || "3M",
+      interestMethod: (template == null ? void 0 : template.data.interestMethod) || "360",
+      opponentName: (opponent == null ? void 0 : opponent.data.name) || null
+    };
+  }
   function Left() {
-    const { form, bind, set } = sdk.useForm({ loanAmount: 3e5, margin: 2, loanPeriodMonths: 360, startDate: "2018-01-01", paymentDay: 15, bridgeMargin: 0, bridgeEndDate: "", wiborTenor: "3M", manualRate: "", interestMethod: "360", repaymentType: "annuity" });
+    const crmDefaults = useCaseDefaults();
+    const defaults = { loanAmount: 3e5, margin: 2, loanPeriodMonths: 360, startDate: "2018-01-01", paymentDay: 15, bridgeMargin: 0, bridgeEndDate: "", wiborTenor: "3M", manualRate: "", interestMethod: "360", repaymentType: "annuity", ...crmDefaults };
+    const { form, bind, set } = sdk.useForm(defaults);
     const rates = useRatesForTenor(form.wiborTenor);
     const calculate = () => {
       const wd = rates.length ? rates : form.manualRate ? [{ date: "2000-01-01", rate: Number(form.manualRate) }] : null;
@@ -148,29 +174,35 @@ const plugin = ({ React, store, ui, icons, sdk }) => {
       if (r) setResult(r);
     };
     const F = (label, key, type) => /* @__PURE__ */ jsx(ui.Field, { label, children: /* @__PURE__ */ jsx(ui.Input, { type: type === "n" ? "number" : type === "d" ? "date" : void 0, ...bind(key, type === "n" ? Number : void 0) }) });
-    return /* @__PURE__ */ jsx(ui.Stack, { children: /* @__PURE__ */ jsx(
-      ui.Box,
-      {
-        header: /* @__PURE__ */ jsx(ui.Cell, { label: true, children: "Parametry kredytu" }),
-        body: /* @__PURE__ */ jsxs(ui.Stack, { children: [
-          F("Kwota kredytu (PLN)", "loanAmount", "n"),
-          F("Marża (%)", "margin", "n"),
-          F("Okres (miesiące)", "loanPeriodMonths", "n"),
-          /* @__PURE__ */ jsx(ui.Field, { label: "WIBOR", children: /* @__PURE__ */ jsx(ui.Select, { ...bind("wiborTenor"), options: WIBOR_TENORS }) }),
-          /* @__PURE__ */ jsx(ui.Field, { label: "Rodzaj rat", children: /* @__PURE__ */ jsx(ui.Select, { ...bind("repaymentType"), options: REPAYMENT_TYPES }) }),
-          F("Data rozpoczęcia", "startDate", "d"),
-          F("Dzień spłaty", "paymentDay", "n"),
-          F("Marża pomostowa (%)", "bridgeMargin", "n"),
-          form.bridgeMargin > 0 && /* @__PURE__ */ jsx(ui.Field, { label: "Koniec pomostowej", children: /* @__PURE__ */ jsx(ui.Input, { type: "date", ...bind("bridgeEndDate") }) }),
-          !rates.length && /* @__PURE__ */ jsxs(Fragment, { children: [
-            /* @__PURE__ */ jsx(ui.Field, { label: "Stawka WIBOR (%)", children: /* @__PURE__ */ jsx(ui.Input, { type: "number", ...bind("manualRate"), placeholder: "np. 5.85" }) }),
-            /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Stała stawka — obliczenie zakłada niezmienną wartość WIBOR przez cały okres kredytu. Aby uwzględnić historyczne zmiany stawek, zaimportuj dane CSV." }) })
+    return /* @__PURE__ */ jsxs(ui.Stack, { children: [
+      (crmDefaults == null ? void 0 : crmDefaults.opponentName) && /* @__PURE__ */ jsx(ui.Card, { color: "info", children: /* @__PURE__ */ jsxs(ui.Text, { muted: true, children: [
+        "Dane z sprawy: ",
+        crmDefaults.opponentName
+      ] }) }),
+      /* @__PURE__ */ jsx(
+        ui.Box,
+        {
+          header: /* @__PURE__ */ jsx(ui.Cell, { label: true, children: "Parametry kredytu" }),
+          body: /* @__PURE__ */ jsxs(ui.Stack, { children: [
+            F("Kwota kredytu (PLN)", "loanAmount", "n"),
+            F("Marża (%)", "margin", "n"),
+            F("Okres (miesiące)", "loanPeriodMonths", "n"),
+            /* @__PURE__ */ jsx(ui.Field, { label: "WIBOR", children: /* @__PURE__ */ jsx(ui.Select, { ...bind("wiborTenor"), options: WIBOR_TENORS }) }),
+            /* @__PURE__ */ jsx(ui.Field, { label: "Rodzaj rat", children: /* @__PURE__ */ jsx(ui.Select, { ...bind("repaymentType"), options: REPAYMENT_TYPES }) }),
+            F("Data rozpoczęcia", "startDate", "d"),
+            F("Dzień spłaty", "paymentDay", "n"),
+            F("Marża pomostowa (%)", "bridgeMargin", "n"),
+            form.bridgeMargin > 0 && /* @__PURE__ */ jsx(ui.Field, { label: "Koniec pomostowej", children: /* @__PURE__ */ jsx(ui.Input, { type: "date", ...bind("bridgeEndDate") }) }),
+            !rates.length && /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx(ui.Field, { label: "Stawka WIBOR (%)", children: /* @__PURE__ */ jsx(ui.Input, { type: "number", ...bind("manualRate"), placeholder: "np. 5.85" }) }),
+              /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Stała stawka — obliczenie zakłada niezmienną wartość WIBOR przez cały okres kredytu. Aby uwzględnić historyczne zmiany stawek, zaimportuj dane CSV." }) })
+            ] }),
+            /* @__PURE__ */ jsx(ui.Button, { onClick: calculate, block: true, color: "primary", children: "Oblicz" })
           ] }),
-          /* @__PURE__ */ jsx(ui.Button, { onClick: calculate, block: true, color: "primary", children: "Oblicz" })
-        ] }),
-        grow: true
-      }
-    ) });
+          grow: true
+        }
+      )
+    ] });
   }
   function Center() {
     const result = useResult(), [tab, setTab] = useState("summary");
@@ -215,7 +247,8 @@ const plugin = ({ React, store, ui, icons, sdk }) => {
     ] });
   }
   function Footer() {
-    return /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Kalkulator WIBOR" });
+    const crmDefaults = useCaseDefaults();
+    return /* @__PURE__ */ jsx(ui.Text, { muted: true, children: (crmDefaults == null ? void 0 : crmDefaults.opponentName) ? `WIBOR · ${crmDefaults.opponentName}` : "Kalkulator WIBOR" });
   }
   store.registerType("wibor-rate-set", [
     { key: "tenorId", label: "Tenor", required: true },

@@ -1,4 +1,4 @@
-import type { PluginFactory, TableColumn } from '../../plugin-types'
+import type { PluginFactory, TableColumn } from '@obieg-zero/sdk'
 
 const plnFmt = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const plnFmt0 = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 })
@@ -25,17 +25,6 @@ function parseStooqCSV(text: string) {
     }
     return acc
   }, []).sort((a, b) => a.date.localeCompare(b.date))
-}
-
-function validateRates(entries: { date: string; rate: number }[]) {
-  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
-  const warnings: string[] = []
-  for (let i = 1; i < sorted.length; i++) {
-    const d0 = new Date(sorted[i - 1].date), d1 = new Date(sorted[i].date)
-    const m = (d1.getFullYear() - d0.getFullYear()) * 12 + d1.getMonth() - d0.getMonth()
-    if (m > 2) warnings.push(`Luka: ${sorted[i - 1].date} → ${sorted[i].date} (${m} mies.)`)
-  }
-  return { warnings }
 }
 
 const WIBOR_TENORS = [{ value: '3M', label: 'WIBOR 3M' }, { value: '6M', label: 'WIBOR 6M' }, { value: '1M', label: 'WIBOR 1M' }]
@@ -115,10 +104,39 @@ const plugin: PluginFactory = ({ React, store, ui, icons, sdk }) => {
   const KVCard = ({ title, rows }: { title: string; rows: [string, string, any?][] }) =>
     <ui.Card title={title}><ui.Stack>{rows.map(([l, v, c], i) => KV(l, v, c))}</ui.Stack></ui.Card>
 
+  // ── CRM bridge ─────────────────────────────────────────────────
+
+  function useCaseDefaults() {
+    const caseId = sdk.shared(s => (s as any).crm?.caseId) as string | null
+    const cases = store.usePosts('case')
+    const opponents = store.usePosts('opponent')
+    const templates = store.usePosts('opponent-template')
+
+    if (!caseId) return null
+    const cas = cases.find(c => c.id === caseId)
+    if (!cas) return null
+
+    const opponentId = cas.data.opponent as string | undefined
+    const opponent = opponentId ? opponents.find(o => o.id === opponentId) : null
+    const template = opponent ? templates.find(t => t.parentId === opponent.id) : null
+
+    return {
+      loanAmount: Number(cas.data.loanAmount) || 300000,
+      startDate: cas.data.loanDate || '2018-01-01',
+      margin: Number(template?.data.margin) || 2.0,
+      bridgeMargin: Number(template?.data.bridgeMargin) || 0,
+      wiborTenor: template?.data.wiborType || '3M',
+      interestMethod: template?.data.interestMethod || '360',
+      opponentName: opponent?.data.name || null,
+    }
+  }
+
   // ── Left: formularz ─────────────────────────────────────────────
 
   function Left() {
-    const { form, bind, set } = sdk.useForm({ loanAmount: 300000, margin: 2.0, loanPeriodMonths: 360, startDate: '2018-01-01', paymentDay: 15, bridgeMargin: 0, bridgeEndDate: '', wiborTenor: '3M', manualRate: '', interestMethod: '360', repaymentType: 'annuity' })
+    const crmDefaults = useCaseDefaults()
+    const defaults = { loanAmount: 300000, margin: 2.0, loanPeriodMonths: 360, startDate: '2018-01-01', paymentDay: 15, bridgeMargin: 0, bridgeEndDate: '', wiborTenor: '3M', manualRate: '', interestMethod: '360', repaymentType: 'annuity', ...crmDefaults }
+    const { form, bind, set } = sdk.useForm(defaults)
     const rates = useRatesForTenor(form.wiborTenor)
 
     const calculate = () => {
@@ -133,6 +151,7 @@ const plugin: PluginFactory = ({ React, store, ui, icons, sdk }) => {
 
     return (
       <ui.Stack>
+        {crmDefaults?.opponentName && <ui.Card color="info"><ui.Text muted>Dane z sprawy: {crmDefaults.opponentName}</ui.Text></ui.Card>}
         <ui.Box
           header={<ui.Cell label>Parametry kredytu</ui.Cell>}
           body={
@@ -212,7 +231,8 @@ const plugin: PluginFactory = ({ React, store, ui, icons, sdk }) => {
   }
 
   function Footer() {
-    return <ui.Text muted>Kalkulator WIBOR</ui.Text>
+    const crmDefaults = useCaseDefaults()
+    return <ui.Text muted>{crmDefaults?.opponentName ? `WIBOR · ${crmDefaults.opponentName}` : 'Kalkulator WIBOR'}</ui.Text>
   }
 
   // ── Rejestracja typów danych ────────────────────────────────────

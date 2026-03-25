@@ -1,4 +1,5 @@
 import type { PluginFactory, TableColumn } from '@obieg-zero/sdk'
+import { daysBetween, resolveWibor, parseStooqCSV, calculateLoan } from './calc'
 
 const plnFmt = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const plnFmt0 = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 })
@@ -6,70 +7,9 @@ const dateFmt = new Intl.DateTimeFormat('pl-PL', { day: '2-digit', month: '2-dig
 const formatPLN = (v: number, decimals = 2) => (decimals === 0 ? plnFmt0 : plnFmt).format(v)
 const formatPct = (v: number, d = 2) => `${v.toFixed(d)}%`
 const formatDate = (d: Date) => dateFmt.format(d)
-const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-const daysBetween = (a: Date, b: Date) => Math.round((b.getTime() - a.getTime()) / 86400000)
-
-const resolveWibor = (d: Date, data: any[]) => { const s = toDateStr(d); let b = data[0]?.rate ?? 0; for (const e of data) { if (e.date <= s) b = e.rate; else break } return b }
-const payDate = (start: Date, off: number, day: number) => { const m = start.getMonth() + off, ty = start.getFullYear() + Math.floor(m / 12), tm = ((m % 12) + 12) % 12; return new Date(ty, tm, Math.min(day, new Date(ty, tm + 1, 0).getDate())) }
-const ann = (b: number, r: number, m: number) => { if (r <= 0 || m <= 0) return m > 0 ? b / m : b; const rm = r / 100 / 12, f = Math.pow(1 + rm, m); return b * (rm * f) / (f - 1) }
-const int = (b: number, p: number, d: number, base = 360) => b * (p / 100) * d / base
-
-// ── Stooq CSV parser ─────────────────────────────────────────────────
-
-function parseStooqCSV(text: string) {
-  return text.trim().split('\n').reduce<{ date: string; rate: number }[]>((acc, line) => {
-    const p = line.split(',')
-    if (p.length < 5) return acc
-    let d = p[0].trim()
-    // YYYYMMDD → YYYY-MM-DD
-    if (/^\d{8}$/.test(d)) d = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return acc
-    const r = parseFloat(p[4])
-    if (!isNaN(r)) acc.push({ date: d, rate: r })
-    return acc
-  }, []).sort((a, b) => a.date.localeCompare(b.date))
-}
 
 const WIBOR_TENORS = [{ value: '3M', label: 'WIBOR 3M' }, { value: '6M', label: 'WIBOR 6M' }, { value: '1M', label: 'WIBOR 1M' }]
-const TENOR_RESET: Record<string, number> = { '1M': 1, '3M': 3, '6M': 6 }
 const REPAYMENT_TYPES = [{ value: 'annuity', label: 'Raty równe' }, { value: 'decreasing', label: 'Raty malejące' }]
-
-function calculateLoan(input: any) {
-  const today = new Date(); today.setHours(0,0,0,0); const wd = input.wiborData || []; const base = input.interestBase || 360
-  if (!wd.length) return null
-
-  const resetMonths = TENOR_RESET[input.wiborTenor] || 3
-  const isDecreasing = input.repaymentType === 'decreasing'
-
-  const schedule: any[] = []; let bal = input.loanAmount, balNW = input.loanAmount, balNR = input.loanAmount, prev = new Date(input.startDate)
-  let wibor = resolveWibor(input.startDate, wd), inst = 0, instNW = 0, reset = 0
-  const a = { pastTotal:0, pastPr:0, pastInt:0, pastIntW:0, pastIntM:0, pastIntB:0, pastN:0, futTotal:0, futInt:0, futIntW:0, futIntM:0, futN:0, pastNoWibor:0, pastIntNW:0, pastPrNW:0, futNoWibor:0, futIntNW:0, curInst:0, curNW:0, pastNoRate:0, futNoRate:0, curNR:0 }
-  for (let i = 1; i <= input.loanPeriodMonths; i++) {
-    const pd = payDate(input.startDate, i, input.paymentDay), days = daysBetween(prev, pd), rem = input.loanPeriodMonths - i + 1, last = i === input.loanPeriodMonths
-    const bridge = input.bridgeEndDate && pd <= input.bridgeEndDate ? input.bridgeMargin : 0
-
-    reset++; if (reset >= resetMonths || i === 1) { if (i > 1) wibor = resolveWibor(pd, wd); reset = 0; inst = ann(bal, wibor + input.margin + bridge, rem); instNW = ann(balNW, input.margin + bridge, rem) }
-
-    const iW = int(bal, wibor, days, base), iM = int(bal, input.margin, days, base), iB = int(bal, bridge, days, base), iT = iW + iM + iB
-
-    let pr = isDecreasing ? bal / rem : Math.max(inst - iT, 0)
-    if (last || pr > bal) pr = bal
-    const isPast = pd <= today
-
-    schedule.push({ number: i, date: pd, days, wiborRate: wibor, installment: pr + iT, principal: pr, interestTotal: iT, interestWibor: iW, interestMargin: iM, interestBridge: iB, remainingBalance: bal - pr, isPast })
-    bal = Math.max(bal - pr, 0)
-
-    const iNW = int(balNW, input.margin + bridge, days, base)
-    let pNW = isDecreasing ? balNW / rem : Math.max(instNW - iNW, 0)
-    if (last || pNW > balNW) pNW = balNW
-    const nwInst = pNW + iNW, nrInst = rem > 0 ? balNR / rem : balNR, pNR = Math.min(nrInst, balNR)
-
-    if (isPast) { a.pastTotal += pr + iT; a.pastPr += pr; a.pastInt += iT; a.pastIntW += iW; a.pastIntM += iM; a.pastIntB += iB; a.pastN++; a.pastNoWibor += nwInst; a.pastIntNW += iNW; a.pastPrNW += pNW; a.pastNoRate += nrInst }
-    else { if (a.futN === 0) { a.curInst = pr + iT; a.curNW = nwInst; a.curNR = nrInst } a.futTotal += pr + iT; a.futInt += iT; a.futIntW += iW; a.futIntM += iM; a.futN++; a.futNoWibor += nwInst; a.futIntNW += iNW; a.futNoRate += nrInst }
-    balNW = Math.max(balNW - pNW, 0); balNR = Math.max(balNR - pNR, 0); prev = pd
-  }
-  return { schedule, repaymentType: isDecreasing ? 'decreasing' : 'annuity', pastTotalPaid:a.pastTotal, pastPrincipalPaid:a.pastPr, pastInterestTotal:a.pastInt, pastInterestWibor:a.pastIntW, pastInterestMargin:a.pastIntM, pastInterestBridge:a.pastIntB, pastInstallmentsCount:a.pastN, futureTotalToPay:a.futTotal, futureInterestTotal:a.futInt, futureInterestWibor:a.futIntW, futureInterestMargin:a.futIntM, futureInstallmentsCount:a.futN, pastTotalPaidNoWibor:a.pastNoWibor, pastInterestNoWibor:a.pastIntNW, pastPrincipalNoWibor:a.pastPrNW, futureTotalNoWibor:a.futNoWibor, futureInterestNoWibor:a.futIntNW, overpaidInterest:a.pastInt-a.pastIntNW, futureSavings:a.futTotal-a.futNoWibor, currentInstallment:a.curInst, installmentNoWibor:a.curNW, pastTotalPaidNoRate:a.pastNoRate, futureTotalNoRate:a.futNoRate, installmentNoRate:a.curNR, overpaidWithMargin:a.pastTotal-a.pastNoRate, futureSavingsWithMargin:a.futTotal-a.futNoRate }
-}
 
 const scheduleColumns: TableColumn[] = [
   { key: 'number', header: '#' }, { key: 'date', header: 'Data' },
@@ -82,6 +22,7 @@ const tabs = [
   { id: 'summary', label: 'Podsumowanie' },
   { id: 'schedule', label: 'Harmonogram' },
   { id: 'compare', label: 'Porównanie' },
+  { id: 'benefit', label: 'Korzyść klienta' },
 ]
 
 // ── Plugin ──────────────────────────────────────────────────────────
@@ -330,6 +271,7 @@ const plugin: PluginFactory = ({ React, store, ui, icons, sdk }) => {
         {tab === 'summary' && <Summary r={result} />}
         {tab === 'schedule' && <Schedule r={result} />}
         {tab === 'compare' && <Compare r={result} />}
+        {tab === 'benefit' && <Benefit r={result} />}
       </ui.Page>
     )
   }
@@ -341,9 +283,10 @@ const plugin: PluginFactory = ({ React, store, ui, icons, sdk }) => {
           <ui.Stat title="Korzyść całkowita" value={formatPLN(r.overpaidInterest + r.futureSavings)} color="success" />
           <ui.Stat title="Rata aktualna" value={formatPLN(r.currentInstallment)} />
           <ui.Stat title="Rata bez WIBOR" value={formatPLN(r.installmentNoWibor)} color="info" />
+          <ui.Stat title="Rata bez WIBOR i marży" value={formatPLN(r.installmentNoRate)} color="success" />
         </ui.Stats>
-        <KVCard title="Dotychczasowe" rows={[['Zapłacono łącznie', formatPLN(r.pastTotalPaid)], ['Kapitał', formatPLN(r.pastPrincipalPaid)], ['Odsetki', formatPLN(r.pastInterestTotal)], ['w tym WIBOR', formatPLN(r.pastInterestWibor), 'warning'], ['Rat zapłaconych', String(r.pastInstallmentsCount)]]} />
-        <KVCard title="Przyszłe" rows={[['Do zapłaty', formatPLN(r.futureTotalToPay)], ['Odsetki przyszłe', formatPLN(r.futureInterestTotal)], ['Rat pozostałych', String(r.futureInstallmentsCount)]]} />
+        <KVCard title="Dotychczasowe" rows={[['Zapłacono łącznie', formatPLN(r.pastTotalPaid)], ['Kapitał', formatPLN(r.pastPrincipalPaid)], ['Odsetki', formatPLN(r.pastInterestTotal)], ['w tym WIBOR', formatPLN(r.pastInterestWibor), 'warning'], ['w tym marża', formatPLN(r.pastInterestMargin), 'warning'], ['Rat zapłaconych', String(r.pastInstallmentsCount)]]} />
+        <KVCard title="Przyszłe" rows={[['Do zapłaty', formatPLN(r.futureTotalToPay)], ['Kapitał do spłaty', formatPLN(r.futureTotalToPay - r.futureInterestTotal)], ['Odsetki przyszłe', formatPLN(r.futureInterestTotal)], ['w tym WIBOR', formatPLN(r.futureInterestWibor), 'warning'], ['w tym marża', formatPLN(r.futureInterestMargin), 'warning'], ['Rat pozostałych', String(r.futureInstallmentsCount)]]} />
       </ui.Stack>
     )
   }
@@ -371,6 +314,20 @@ const plugin: PluginFactory = ({ React, store, ui, icons, sdk }) => {
         <KVCard title="Przeszłość" rows={[['Zapłacone z WIBOR', formatPLN(r.pastTotalPaid)], ['Zapłacone bez WIBOR', formatPLN(r.pastTotalPaidNoWibor)], ['Nadpłata (WIBOR)', formatPLN(r.overpaidInterest), 'error'], ['Nadpłata (WIBOR + marża)', formatPLN(r.overpaidWithMargin), 'error']]} />
         <KVCard title="Przyszłość" rows={[['Do zapłaty z WIBOR', formatPLN(r.futureTotalToPay)], ['Do zapłaty bez WIBOR', formatPLN(r.futureTotalNoWibor)], ['Oszczędność', formatPLN(r.futureSavings), 'success']]} />
         <KVCard title="Porównanie rat" rows={[['Rata aktualna', formatPLN(r.currentInstallment)], ['Rata bez WIBOR', formatPLN(r.installmentNoWibor), 'info'], ['Rata sam kapitał', formatPLN(r.installmentNoRate), 'success']]} />
+      </ui.Stack>
+    )
+  }
+
+  function Benefit({ r }: { r: any }) {
+    return (
+      <ui.Stack>
+        <ui.Stats>
+          <ui.Stat title="Korzyść łączna (WIBOR)" value={formatPLN(r.overpaidInterest + r.futureSavings)} color="success" />
+          <ui.Stat title="Korzyść łączna (WIBOR + marża)" value={formatPLN(r.overpaidWithMargin + r.futureSavingsWithMargin)} color="success" />
+        </ui.Stats>
+        <KVCard title="Nadpłacone dotychczas" rows={[['Nadpłata z tytułu WIBOR', formatPLN(r.overpaidInterest), 'error'], ['Nadpłata z tytułu WIBOR + marża', formatPLN(r.overpaidWithMargin), 'error']]} />
+        <KVCard title="Przyszłe oszczędności" rows={[['Oszczędność (WIBOR)', formatPLN(r.futureSavings), 'success'], ['Oszczędność (WIBOR + marża)', formatPLN(r.futureSavingsWithMargin), 'success']]} />
+        <KVCard title="Różnica w racie miesięcznej" rows={[['Rata aktualna', formatPLN(r.currentInstallment)], ['Rata bez WIBOR', formatPLN(r.installmentNoWibor), 'info'], ['Rata bez WIBOR i marży', formatPLN(r.installmentNoRate), 'success'], ['Oszczędność miesięczna (bez WIBOR)', formatPLN(r.currentInstallment - r.installmentNoWibor), 'info'], ['Oszczędność miesięczna (bez WIBOR i marży)', formatPLN(r.currentInstallment - r.installmentNoRate), 'success']]} />
       </ui.Stack>
     )
   }

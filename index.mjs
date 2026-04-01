@@ -543,6 +543,7 @@ function createViews(deps, useInput) {
       var _a;
       return (_a = s.crm) == null ? void 0 : _a.caseId;
     });
+    const nav = sdk.shared((s) => s.navigate);
     const cas = caseId ? store.usePost(caseId) : null;
     const [saved, setSaved] = useState(false);
     const reportData = {
@@ -591,8 +592,25 @@ function createViews(deps, useInput) {
       ] }) }),
       cas ? /* @__PURE__ */ jsx(ui.Card, { title: "Sprawa CRM", color: saved ? "success" : void 0, children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
         /* @__PURE__ */ jsx(ui.Text, { muted: true, children: cas.data.subject || cas.id.slice(0, 8) }),
-        saved ? /* @__PURE__ */ jsx(ui.Text, { bold: true, color: "success", children: "Raport zapisany w sprawie" }) : /* @__PURE__ */ jsx(ui.Button, { color: "primary", block: true, onClick: saveToCase, children: "Zapisz raport w sprawie" })
-      ] }) }) : /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Brak aktywnej sprawy CRM — wybierz spraw\\u0119 w module Kancelaria, aby zapisa\\u0107 raport" }) })
+        saved ? /* @__PURE__ */ jsxs(ui.Stack, { children: [
+          /* @__PURE__ */ jsx(ui.Text, { bold: true, color: "success", children: "Raport zapisany w sprawie" }),
+          nav && /* @__PURE__ */ jsxs(ui.Button, { color: "primary", block: true, onClick: () => {
+            if (nav.onReturn) nav.onReturn();
+            sdk.shared.setState({ navigate: null });
+            sdk.useHostStore.setState({ activeId: nav.from });
+          }, children: [
+            "← ",
+            nav.label || "Wróć"
+          ] })
+        ] }) : /* @__PURE__ */ jsx(ui.Button, { color: "primary", block: true, onClick: saveToCase, children: "Zapisz raport w sprawie" })
+      ] }) }) : nav ? /* @__PURE__ */ jsxs(ui.Button, { color: "primary", block: true, onClick: () => {
+        if (nav.onReturn) nav.onReturn();
+        sdk.shared.setState({ navigate: null });
+        sdk.useHostStore.setState({ activeId: nav.from });
+      }, children: [
+        "← ",
+        nav.label || "Wróć"
+      ] }) : /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Brak aktywnej sprawy CRM — wybierz spraw\\u0119 w module Kancelaria, aby zapisa\\u0107 raport" }) })
     ] });
   }
   return { Summary, Schedule, Compare, Benefit, Calculations, Report };

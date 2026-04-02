@@ -258,7 +258,7 @@ function createWiborService({ React, store, ui, sdk }) {
   function WiborDataPanel() {
     return /* @__PURE__ */ jsxs(ui.Stack, { gap: "md", children: [
       /* @__PURE__ */ jsx(ui.Card, { children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
-        /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Historyczne stawki WIBOR potrzebne do oblicze\\u0144. Pobierz aktualne dane jednym klikni\\u0119ciem lub zaimportuj w\\u0142asny plik." }),
+        /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Historyczne stawki WIBOR potrzebne do obliczeń. Pobierz aktualne dane jednym kliknięciem lub zaimportuj własny plik." }),
         /* @__PURE__ */ jsx(ui.Row, { justify: "end", children: /* @__PURE__ */ jsx(ui.Button, { size: "xs", color: "primary", onClick: fetchAllTenors, children: "Pobierz wszystkie" }) })
       ] }) }),
       ["1M", "3M", "6M"].map((t, i, arr) => {
@@ -279,7 +279,7 @@ function createWiborService({ React, store, ui, sdk }) {
     const [selectedOpp, setSelectedOpp] = useState("");
     const opponents = store.usePosts("opponent");
     const templates = store.usePosts("opponent-template");
-    if (!opponents.length) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Brak bank\\u00f3w w bazie" });
+    if (!opponents.length) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Brak banków w bazie" });
     const options = [{ value: "", label: "— wszystkie banki —" }, ...opponents.map((o) => ({ value: o.id, label: o.data.name }))];
     const filtered = selectedOpp ? opponents.filter((o) => o.id === selectedOpp) : opponents;
     const KV = (label, value) => /* @__PURE__ */ jsxs(ui.Row, { justify: "between", children: [
@@ -296,7 +296,7 @@ function createWiborService({ React, store, ui, sdk }) {
       sdk.log(`Zastosowano szablon: ${t.data.name}`, "ok");
     };
     return /* @__PURE__ */ jsxs(ui.Stack, { gap: "md", children: [
-      /* @__PURE__ */ jsx(ui.Card, { children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Szablony um\\u00f3w z danymi bank\\u00f3w. Wybierz bank i zastosuj szablon aby wype\\u0142ni\\u0107 parametry kalkulatora." }) }),
+      /* @__PURE__ */ jsx(ui.Card, { children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Szablony umów z danymi banków. Wybierz bank i zastosuj szablon aby wypełnić parametry kalkulatora." }) }),
       /* @__PURE__ */ jsx(ui.Select, { value: selectedOpp, options, onChange: (e) => setSelectedOpp(e.target.value) }),
       filtered.map((opp) => {
         const tpls = templates.filter((t) => t.parentId === opp.id);
@@ -329,13 +329,13 @@ function createViews(deps, useInput) {
   function Summary({ r }) {
     return /* @__PURE__ */ jsxs(ui.Stack, { children: [
       /* @__PURE__ */ jsxs(ui.Stats, { children: [
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Korzy\\u015b\\u0107 ca\\u0142kowita", value: formatPLN(r.overpaidInterest + r.futureSavings), color: "success" }),
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Korzyść całkowita", value: formatPLN(r.overpaidInterest + r.futureSavings), color: "success" }),
         /* @__PURE__ */ jsx(ui.Stat, { title: "Rata aktualna", value: formatPLN(r.currentInstallment) }),
         /* @__PURE__ */ jsx(ui.Stat, { title: "Rata bez WIBOR", value: formatPLN(r.installmentNoWibor), color: "info" }),
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Rata bez WIBOR i mar\\u017cy", value: formatPLN(r.installmentNoRate), color: "success" })
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Rata bez WIBOR i marży", value: formatPLN(r.installmentNoRate), color: "success" })
       ] }),
       /* @__PURE__ */ jsx(KVCard, { title: "Dotychczasowe", rows: [["Zapłacono łącznie", formatPLN(r.pastTotalPaid)], ["Kapitał", formatPLN(r.pastPrincipalPaid)], ["Odsetki", formatPLN(r.pastInterestTotal)], ["w tym WIBOR", formatPLN(r.pastInterestWibor), "warning"], ["w tym marża", formatPLN(r.pastInterestMargin), "warning"], ["Rat zapłaconych", String(r.pastInstallmentsCount)]] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "Przysz\\u0142e", rows: [["Do zapłaty", formatPLN(r.futureTotalToPay)], ["Kapitał do spłaty", formatPLN(r.futureTotalToPay - r.futureInterestTotal)], ["Odsetki przyszłe", formatPLN(r.futureInterestTotal)], ["w tym WIBOR", formatPLN(r.futureInterestWibor), "warning"], ["w tym marża", formatPLN(r.futureInterestMargin), "warning"], ["Rat pozostałych", String(r.futureInstallmentsCount)]] })
+      /* @__PURE__ */ jsx(KVCard, { title: "Przyszłe", rows: [["Do zapłaty", formatPLN(r.futureTotalToPay)], ["Kapitał do spłaty", formatPLN(r.futureTotalToPay - r.futureInterestTotal)], ["Odsetki przyszłe", formatPLN(r.futureInterestTotal)], ["w tym WIBOR", formatPLN(r.futureInterestWibor), "warning"], ["w tym marża", formatPLN(r.futureInterestMargin), "warning"], ["Rat pozostałych", String(r.futureInstallmentsCount)]] })
     ] });
   }
   function Schedule({ r }) {
@@ -351,36 +351,36 @@ function createViews(deps, useInput) {
   function Compare({ r }) {
     return /* @__PURE__ */ jsxs(ui.Stack, { children: [
       /* @__PURE__ */ jsxs(ui.Stats, { children: [
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Nadp\\u0142acone odsetki", value: formatPLN(r.overpaidInterest), color: "error" }),
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Przysz\\u0142e oszcz\\u0119dno\\u015bci", value: formatPLN(r.futureSavings), color: "success" })
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Nadpłacone odsetki", value: formatPLN(r.overpaidInterest), color: "error" }),
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Przyszłe oszczędności", value: formatPLN(r.futureSavings), color: "success" })
       ] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "Przesz\\u0142o\\u015b\\u0107", rows: [["Zapłacone z WIBOR", formatPLN(r.pastTotalPaid)], ["Zapłacone bez WIBOR", formatPLN(r.pastTotalPaidNoWibor)], ["Nadpłata (WIBOR)", formatPLN(r.overpaidInterest), "error"], ["Nadpłata (WIBOR + marża)", formatPLN(r.overpaidWithMargin), "error"]] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "Przysz\\u0142o\\u015b\\u0107", rows: [["Do zapłaty z WIBOR", formatPLN(r.futureTotalToPay)], ["Do zapłaty bez WIBOR", formatPLN(r.futureTotalNoWibor)], ["Oszczędność", formatPLN(r.futureSavings), "success"]] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "Por\\u00f3wnanie rat", rows: [["Rata aktualna", formatPLN(r.currentInstallment)], ["Rata bez WIBOR", formatPLN(r.installmentNoWibor), "info"], ["Rata sam kapitał", formatPLN(r.installmentNoRate), "success"]] })
+      /* @__PURE__ */ jsx(KVCard, { title: "Przeszłość", rows: [["Zapłacone z WIBOR", formatPLN(r.pastTotalPaid)], ["Zapłacone bez WIBOR", formatPLN(r.pastTotalPaidNoWibor)], ["Nadpłata (WIBOR)", formatPLN(r.overpaidInterest), "error"], ["Nadpłata (WIBOR + marża)", formatPLN(r.overpaidWithMargin), "error"]] }),
+      /* @__PURE__ */ jsx(KVCard, { title: "Przyszłość", rows: [["Do zapłaty z WIBOR", formatPLN(r.futureTotalToPay)], ["Do zapłaty bez WIBOR", formatPLN(r.futureTotalNoWibor)], ["Oszczędność", formatPLN(r.futureSavings), "success"]] }),
+      /* @__PURE__ */ jsx(KVCard, { title: "Porównanie rat", rows: [["Rata aktualna", formatPLN(r.currentInstallment)], ["Rata bez WIBOR", formatPLN(r.installmentNoWibor), "info"], ["Rata sam kapitał", formatPLN(r.installmentNoRate), "success"]] })
     ] });
   }
   function Benefit({ r }) {
     return /* @__PURE__ */ jsxs(ui.Stack, { children: [
       /* @__PURE__ */ jsxs(ui.Stats, { children: [
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Korzy\\u015b\\u0107 \\u0142\\u0105czna (WIBOR)", value: formatPLN(r.overpaidInterest + r.futureSavings), color: "success" }),
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Korzy\\u015b\\u0107 \\u0142\\u0105czna (WIBOR + mar\\u017ca)", value: formatPLN(r.overpaidWithMargin + r.futureSavingsWithMargin), color: "success" })
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Korzyść łączna (WIBOR)", value: formatPLN(r.overpaidInterest + r.futureSavings), color: "success" }),
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Korzyść łączna (WIBOR + marża)", value: formatPLN(r.overpaidWithMargin + r.futureSavingsWithMargin), color: "success" })
       ] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "Nadp\\u0142acone dotychczas", rows: [["Nadpłata z tytułu WIBOR", formatPLN(r.overpaidInterest), "error"], ["Nadpłata z tytułu WIBOR + marża", formatPLN(r.overpaidWithMargin), "error"]] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "Przysz\\u0142e oszcz\\u0119dno\\u015bci", rows: [["Oszczędność (WIBOR)", formatPLN(r.futureSavings), "success"], ["Oszczędność (WIBOR + marża)", formatPLN(r.futureSavingsWithMargin), "success"]] }),
-      /* @__PURE__ */ jsx(KVCard, { title: "R\\u00f3\\u017cnica w racie miesi\\u0119cznej", rows: [["Rata aktualna", formatPLN(r.currentInstallment)], ["Rata bez WIBOR", formatPLN(r.installmentNoWibor), "info"], ["Rata bez WIBOR i marży", formatPLN(r.installmentNoRate), "success"], ["Oszczędność miesięczna (bez WIBOR)", formatPLN(r.currentInstallment - r.installmentNoWibor), "info"], ["Oszczędność miesięczna (bez WIBOR i marży)", formatPLN(r.currentInstallment - r.installmentNoRate), "success"]] })
+      /* @__PURE__ */ jsx(KVCard, { title: "Nadpłacone dotychczas", rows: [["Nadpłata z tytułu WIBOR", formatPLN(r.overpaidInterest), "error"], ["Nadpłata z tytułu WIBOR + marża", formatPLN(r.overpaidWithMargin), "error"]] }),
+      /* @__PURE__ */ jsx(KVCard, { title: "Przyszłe oszczędności", rows: [["Oszczędność (WIBOR)", formatPLN(r.futureSavings), "success"], ["Oszczędność (WIBOR + marża)", formatPLN(r.futureSavingsWithMargin), "success"]] }),
+      /* @__PURE__ */ jsx(KVCard, { title: "Różnica w racie miesięcznej", rows: [["Rata aktualna", formatPLN(r.currentInstallment)], ["Rata bez WIBOR", formatPLN(r.installmentNoWibor), "info"], ["Rata bez WIBOR i marży", formatPLN(r.installmentNoRate), "success"], ["Oszczędność miesięczna (bez WIBOR)", formatPLN(r.currentInstallment - r.installmentNoWibor), "info"], ["Oszczędność miesięczna (bez WIBOR i marży)", formatPLN(r.currentInstallment - r.installmentNoRate), "success"]] })
     ] });
   }
   function Calculations({ r }) {
     const inp = useInput();
     const [expanded, setExpanded] = useState(1);
-    if (!inp) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Brak danych wej\\u015bciowych" });
+    if (!inp) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Brak danych wejściowych" });
     const baseDays = inp.interestBase || 360;
     const tenor = inp.wiborTenor || "3M";
     const resetMonths = { "1M": 1, "3M": 3, "6M": 6 }[tenor] || 3;
     const repType = inp.repaymentType === "decreasing" ? "malejące" : "równe (annuitetowe)";
     const toggle = (n) => setExpanded(expanded === n ? null : n);
     return /* @__PURE__ */ jsxs(ui.Stack, { children: [
-      /* @__PURE__ */ jsx(ui.Card, { title: "Parametry wej\\u015bciowe", children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
+      /* @__PURE__ */ jsx(ui.Card, { title: "Parametry wejściowe", children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
         KV("Kwota kredytu", formatPLN(inp.loanAmount)),
         KV("Marża banku", formatPct(inp.margin)),
         KV("Okres", `${inp.loanPeriodMonths} mies.`),
@@ -394,18 +394,18 @@ function createViews(deps, useInput) {
       ] }) }),
       /* @__PURE__ */ jsx(ui.Card, { title: "Wzory", children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
         /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
-          "Odsetki = saldo \\u00d7 (stawka / 100) \\u00d7 dni_w_okresie / ",
+          "Odsetki = saldo × (stawka / 100) × dni_w_okresie / ",
           baseDays
         ] }),
-        /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Rata annuitetowa = saldo \\u00d7 (r \\u00d7 (1+r)^n) / ((1+r)^n \\u2212 1), gdzie r = stawka/100/12" }),
-        /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Stawka = WIBOR + mar\\u017ca + mar\\u017ca_pomostowa" }),
+        /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Rata annuitetowa = saldo × (r × (1+r)^n) / ((1+r)^n − 1), gdzie r = stawka/100/12" }),
+        /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Stawka = WIBOR + marża + marża_pomostowa" }),
         /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
-          "WIBOR: ostatnia znana stawka \\u2264 data p\\u0142atno\\u015bci, reset co ",
+          "WIBOR: ostatnia znana stawka ≤ data płatności, reset co ",
           resetMonths,
           " mies."
         ] })
       ] }) }),
-      /* @__PURE__ */ jsx(ui.Card, { title: "Obliczenia krok po kroku", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Kliknij rat\\u0119 aby rozwin\\u0105\\u0107 szczeg\\u00f3\\u0142y oblicze\\u0144" }) }),
+      /* @__PURE__ */ jsx(ui.Card, { title: "Obliczenia krok po kroku", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Kliknij ratę aby rozwinąć szczegóły obliczeń" }) }),
       r.schedule.map((s) => {
         const isOpen = expanded === s.number;
         const bridge = s.interestBridge > 0;
@@ -416,7 +416,7 @@ function createViews(deps, useInput) {
             /* @__PURE__ */ jsxs(ui.Text, { bold: true, size: "xs", children: [
               "Rata #",
               s.number,
-              " \\u2014 ",
+              " — ",
               formatDate(s.date)
             ] }),
             /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: formatPLN(s.installment) })
@@ -437,17 +437,17 @@ function createViews(deps, useInput) {
             /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
               "WIBOR ",
               tenor,
-              " na dzie\\u0144 ",
+              " na dzień ",
               formatDate(s.date),
               ": ",
               formatPct(s.wiborRate)
             ] }),
-            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "3. Oprocentowanie \\u0142\\u0105czne" }),
+            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "3. Oprocentowanie łączne" }),
             /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
               formatPct(s.wiborRate),
               " (WIBOR) + ",
               formatPct(inp.margin),
-              " (mar\\u017ca)",
+              " (marża)",
               bridge ? ` + ${formatPct(inp.bridgeMargin)} (pomostowa)` : "",
               " = ",
               formatPct(totalRate)
@@ -455,21 +455,21 @@ function createViews(deps, useInput) {
             /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "4. Odsetki WIBOR" }),
             /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
               formatPLN(s.remainingBalance + s.principal),
-              " \\u00d7 ",
+              " × ",
               formatPct(s.wiborRate),
-              " \\u00d7 ",
+              " × ",
               s.days,
               " / ",
               baseDays,
               " = ",
               formatPLN(s.interestWibor)
             ] }),
-            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "5. Odsetki mar\\u017ca" }),
+            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "5. Odsetki marża" }),
             /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
               formatPLN(s.remainingBalance + s.principal),
-              " \\u00d7 ",
+              " × ",
               formatPct(inp.margin),
-              " \\u00d7 ",
+              " × ",
               s.days,
               " / ",
               baseDays,
@@ -480,9 +480,9 @@ function createViews(deps, useInput) {
               /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "5b. Odsetki pomostowa" }),
               /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
                 formatPLN(s.remainingBalance + s.principal),
-                " \\u00d7 ",
+                " × ",
                 formatPct(inp.bridgeMargin),
-                " \\u00d7 ",
+                " × ",
                 s.days,
                 " / ",
                 baseDays,
@@ -490,7 +490,7 @@ function createViews(deps, useInput) {
                 formatPLN(s.interestBridge)
               ] })
             ] }),
-            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "6. Odsetki \\u0142\\u0105cznie" }),
+            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "6. Odsetki łącznie" }),
             /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
               formatPLN(s.interestWibor),
               " + ",
@@ -499,9 +499,9 @@ function createViews(deps, useInput) {
               " = ",
               formatPLN(s.interestTotal)
             ] }),
-            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "7. Rata i kapita\\u0142" }),
+            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "7. Rata i kapitał" }),
             inp.repaymentType === "decreasing" ? /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
-              "Kapita\\u0142 = saldo / pozosta\\u0142e raty = ",
+              "Kapitał = saldo / pozostałe raty = ",
               formatPLN(s.remainingBalance + s.principal),
               " / ",
               inp.loanPeriodMonths - s.number + 1,
@@ -516,9 +516,9 @@ function createViews(deps, useInput) {
               inp.loanPeriodMonths - s.number + 1,
               ") = ",
               formatPLN(s.installment),
-              ", kapita\\u0142 = ",
+              ", kapitał = ",
               formatPLN(s.installment),
-              " \\u2212 ",
+              " − ",
               formatPLN(s.interestTotal),
               " = ",
               formatPLN(s.principal)
@@ -526,7 +526,7 @@ function createViews(deps, useInput) {
             /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", bold: true, children: "8. Saldo po racie" }),
             /* @__PURE__ */ jsxs(ui.Text, { muted: true, size: "2xs", children: [
               formatPLN(s.remainingBalance + s.principal),
-              " \\u2212 ",
+              " − ",
               formatPLN(s.principal),
               " = ",
               formatPLN(s.remainingBalance)
@@ -538,11 +538,12 @@ function createViews(deps, useInput) {
   }
   function Report({ r }) {
     const inp = useInput();
-    if (!inp) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Brak danych wej\\u015bciowych" });
+    if (!inp) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Brak danych wejściowych" });
     const caseId = sdk.shared((s) => {
       var _a;
       return (_a = s.crm) == null ? void 0 : _a.caseId;
     });
+    const nav = sdk.shared((s) => s.navigate);
     const cas = caseId ? store.usePost(caseId) : null;
     const [saved, setSaved] = useState(false);
     const reportData = {
@@ -575,7 +576,7 @@ function createViews(deps, useInput) {
     return /* @__PURE__ */ jsxs(ui.Stack, { children: [
       /* @__PURE__ */ jsxs(ui.Stats, { children: [
         /* @__PURE__ */ jsx(ui.Stat, { title: "Kwota zwrotu od banku", value: formatPLN(r.overpaidInterest), color: "error" }),
-        /* @__PURE__ */ jsx(ui.Stat, { title: "Dodatkowe korzy\\u015bci", value: formatPLN(r.futureSavings), color: "success" }),
+        /* @__PURE__ */ jsx(ui.Stat, { title: "Dodatkowe korzyści", value: formatPLN(r.futureSavings), color: "success" }),
         /* @__PURE__ */ jsx(ui.Stat, { title: "Nowa rata (bez WIBOR)", value: formatPLN(r.installmentNoWibor), color: "info" })
       ] }),
       /* @__PURE__ */ jsx(ui.Card, { title: "Analiza prawno-finansowa", children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
@@ -591,8 +592,25 @@ function createViews(deps, useInput) {
       ] }) }),
       cas ? /* @__PURE__ */ jsx(ui.Card, { title: "Sprawa CRM", color: saved ? "success" : void 0, children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
         /* @__PURE__ */ jsx(ui.Text, { muted: true, children: cas.data.subject || cas.id.slice(0, 8) }),
-        saved ? /* @__PURE__ */ jsx(ui.Text, { bold: true, color: "success", children: "Raport zapisany w sprawie" }) : /* @__PURE__ */ jsx(ui.Button, { color: "primary", block: true, onClick: saveToCase, children: "Zapisz raport w sprawie" })
-      ] }) }) : /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Brak aktywnej sprawy CRM — wybierz spraw\\u0119 w module Kancelaria, aby zapisa\\u0107 raport" }) })
+        saved ? /* @__PURE__ */ jsxs(ui.Stack, { children: [
+          /* @__PURE__ */ jsx(ui.Text, { bold: true, color: "success", children: "Raport zapisany w sprawie" }),
+          nav && /* @__PURE__ */ jsxs(ui.Button, { color: "primary", block: true, onClick: () => {
+            if (nav.onReturn) nav.onReturn();
+            sdk.shared.setState({ navigate: null });
+            sdk.useHostStore.setState({ activeId: nav.from });
+          }, children: [
+            "← ",
+            nav.label || "Wróć"
+          ] })
+        ] }) : /* @__PURE__ */ jsx(ui.Button, { color: "primary", block: true, onClick: saveToCase, children: "Zapisz raport w sprawie" })
+      ] }) }) : nav ? /* @__PURE__ */ jsxs(ui.Button, { color: "primary", block: true, onClick: () => {
+        if (nav.onReturn) nav.onReturn();
+        sdk.shared.setState({ navigate: null });
+        sdk.useHostStore.setState({ activeId: nav.from });
+      }, children: [
+        "← ",
+        nav.label || "Wróć"
+      ] }) : /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Brak aktywnej sprawy CRM — wybierz sprawę w module Kancelaria, aby zapisać raport" }) })
     ] });
   }
   return { Summary, Schedule, Compare, Benefit, Calculations, Report };
@@ -678,7 +696,7 @@ const plugin = (deps) => {
           !rates.length && /* @__PURE__ */ jsxs(Fragment, { children: [
             /* @__PURE__ */ jsx(ui.Field, { label: "Stawka WIBOR (%)", children: /* @__PURE__ */ jsx(ui.Input, { type: "number", ...bind("manualRate"), placeholder: "np. 5.85" }) }),
             /* @__PURE__ */ jsx(ui.Card, { color: "warning", children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
-              /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Sta\\u0142a stawka \\u2014 obliczenie zak\\u0142ada niezmienni\\u0105 warto\\u015b\\u0107 WIBOR przez ca\\u0142y okres kredytu. Aby uwzgl\\u0119dni\\u0107 historyczne zmiany stawek, zaimportuj dane CSV." }),
+              /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Stała stawka — obliczenie zakłada niezmienną wartość WIBOR przez cały okres kredytu. Aby uwzględnić historyczne zmiany stawek, zaimportuj dane CSV." }),
               /* @__PURE__ */ jsx(ui.Row, { justify: "end", children: /* @__PURE__ */ jsx(ui.Button, { size: "xs", color: "primary", outline: true, onClick: () => setLeftTab("wibor"), children: "Stawki WIBOR" }) })
             ] }) })
           ] }),
@@ -690,7 +708,7 @@ const plugin = (deps) => {
   }
   function Center() {
     const result = useResult(), [tab, setTab] = useState("summary");
-    if (!result) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Wprowad\\u017a dane i kliknij Oblicz" });
+    if (!result) return /* @__PURE__ */ jsx(ui.Placeholder, { text: "Wprowadź dane i kliknij Oblicz" });
     return /* @__PURE__ */ jsxs(ui.Page, { children: [
       /* @__PURE__ */ jsx(ui.Tabs, { tabs: resultTabs, active: tab, onChange: setTab }),
       tab === "summary" && /* @__PURE__ */ jsx(Summary, { r: result }),

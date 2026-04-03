@@ -179,6 +179,22 @@ const formatPct = (v, d = 2) => `${v.toFixed(d)}%`;
 const formatDate = (d) => dateFmt.format(d);
 function createWiborService({ React, store, ui, sdk }) {
   const { useState } = React;
+  function getAutoFetch() {
+    const configs = store.getPosts("wibor-config");
+    return configs.length > 0 && !!configs[0].data.autoFetch;
+  }
+  function setAutoFetch(val) {
+    const configs = store.getPosts("wibor-config");
+    if (configs.length > 0) {
+      store.update(configs[0].id, { autoFetch: val });
+    } else {
+      store.add("wibor-config", { autoFetch: val });
+    }
+  }
+  function useAutoFetch() {
+    const configs = store.usePosts("wibor-config");
+    return configs.length > 0 && !!configs[0].data.autoFetch;
+  }
   function useRatesForTenor(tenor) {
     var _a, _b;
     const sets = store.usePosts("wibor-rate-set");
@@ -255,11 +271,35 @@ function createWiborService({ React, store, ui, sdk }) {
     }
     saveTenorData(tenor, entries);
   }
+  function initAutoFetch() {
+    if (!getAutoFetch()) return;
+    const stale = ["1M", "3M", "6M"].some((t) => {
+      var _a;
+      const sets = store.getPosts("wibor-rate-set");
+      const tenorId = `wibor-${t.toLowerCase()}`;
+      const rateSet = sets.find((s) => s.data.tenorId === tenorId);
+      const entries = ((_a = rateSet == null ? void 0 : rateSet.data) == null ? void 0 : _a.entries) || [];
+      if (!entries.length) return true;
+      const lastDate = entries[entries.length - 1].date;
+      return daysBetween(new Date(lastDate), /* @__PURE__ */ new Date()) >= 14;
+    });
+    if (stale) {
+      sdk.log("Auto-aktualizacja stawek WIBOR…", "info");
+      fetchAllTenors();
+    }
+  }
   function WiborDataPanel() {
+    const autoFetch = useAutoFetch();
     return /* @__PURE__ */ jsxs(ui.Stack, { gap: "md", children: [
       /* @__PURE__ */ jsx(ui.Card, { children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
         /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Historyczne stawki WIBOR potrzebne do obliczeń. Pobierz aktualne dane jednym kliknięciem lub zaimportuj własny plik." }),
-        /* @__PURE__ */ jsx(ui.Row, { justify: "end", children: /* @__PURE__ */ jsx(ui.Button, { size: "xs", color: "primary", onClick: fetchAllTenors, children: "Pobierz wszystkie" }) })
+        /* @__PURE__ */ jsxs(ui.Row, { justify: "between", align: "center", children: [
+          /* @__PURE__ */ jsxs(ui.Row, { align: "center", gap: "xs", children: [
+            /* @__PURE__ */ jsx("input", { type: "checkbox", checked: autoFetch, onChange: (e) => setAutoFetch(e.target.checked) }),
+            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Auto-aktualizacja" })
+          ] }),
+          /* @__PURE__ */ jsx(ui.Button, { size: "xs", color: "primary", onClick: fetchAllTenors, children: "Pobierz wszystkie" })
+        ] })
       ] }) }),
       ["1M", "3M", "6M"].map((t, i, arr) => {
         const s = useRateStatus(t);
@@ -316,7 +356,7 @@ function createWiborService({ React, store, ui, sdk }) {
       })
     ] });
   }
-  return { useRatesForTenor, WiborDataPanel, TemplatesPanel };
+  return { useRatesForTenor, WiborDataPanel, TemplatesPanel, initAutoFetch };
 }
 function createViews(deps, useInput) {
   const { React, ui, store, sdk } = deps;
@@ -618,7 +658,7 @@ function createViews(deps, useInput) {
 const plugin = (deps) => {
   const { React, store, ui, icons, sdk } = deps;
   const { useState } = React;
-  const { useRatesForTenor, WiborDataPanel, TemplatesPanel } = createWiborService(deps);
+  const { useRatesForTenor, WiborDataPanel, TemplatesPanel, initAutoFetch } = createWiborService(deps);
   const useCalcStore = sdk.create(() => ({ result: null, input: null }));
   const setResult = (r, inp) => useCalcStore.setState({ result: r, input: inp || null });
   const useResult = () => useCalcStore((s) => s.result);
@@ -723,6 +763,9 @@ const plugin = (deps) => {
     const crmDefaults = useCaseDefaults();
     return /* @__PURE__ */ jsx(ui.Text, { muted: true, children: (crmDefaults == null ? void 0 : crmDefaults.opponentName) ? `WIBOR · ${crmDefaults.opponentName}` : "Kalkulator WIBOR" });
   }
+  store.registerType("wibor-config", [
+    { key: "autoFetch", label: "Auto-aktualizacja" }
+  ], "Ustawienia WIBOR");
   store.registerType("wibor-rate-set", [
     { key: "tenorId", label: "Tenor", required: true },
     { key: "entries", label: "Stawki" }
@@ -730,6 +773,7 @@ const plugin = (deps) => {
   sdk.registerView("wiborCalc.left", { slot: "left", component: Left });
   sdk.registerView("wiborCalc.center", { slot: "center", component: Center });
   sdk.registerView("wiborCalc.footer", { slot: "footer", component: Footer });
+  initAutoFetch();
   sdk.registerParser("wiborCalc.csv", {
     accept: ".csv",
     targetType: "wibor-rate-set",

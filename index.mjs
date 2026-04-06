@@ -294,10 +294,7 @@ function createWiborService({ React, store, ui, sdk }) {
       /* @__PURE__ */ jsx(ui.Card, { children: /* @__PURE__ */ jsxs(ui.Stack, { children: [
         /* @__PURE__ */ jsx(ui.Text, { muted: true, children: "Historyczne stawki WIBOR potrzebne do obliczeń. Pobierz aktualne dane jednym kliknięciem lub zaimportuj własny plik." }),
         /* @__PURE__ */ jsxs(ui.Row, { justify: "between", align: "center", children: [
-          /* @__PURE__ */ jsxs(ui.Row, { align: "center", gap: "xs", children: [
-            /* @__PURE__ */ jsx("input", { type: "checkbox", checked: autoFetch, onChange: (e) => setAutoFetch(e.target.checked) }),
-            /* @__PURE__ */ jsx(ui.Text, { muted: true, size: "2xs", children: "Auto-aktualizacja" })
-          ] }),
+          /* @__PURE__ */ jsx(ui.Checkbox, { checked: autoFetch, onChange: (v) => setAutoFetch(v), label: "Auto-aktualizacja" }),
           /* @__PURE__ */ jsx(ui.Button, { size: "xs", color: "primary", onClick: fetchAllTenors, children: "Pobierz wszystkie" })
         ] })
       ] }) }),
